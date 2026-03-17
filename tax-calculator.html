@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>상속세 · 증여세 계산기</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Noto+Serif+KR:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0b1e;
+      --surface: rgba(255,255,255,0.05);
+      --border: rgba(167,139,250,0.22);
+      --accent1: #a78bfa;
+      --accent2: #60a5fa;
+      --text: #e0dff5;
+      --muted: #a5b4fc;
+      --danger: #f87171;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(167,139,250,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(96,165,250,0.10) 0%, transparent 55%);
+      font-family: 'Nanum Gothic', 'Malgun Gothic', sans-serif;
+      color: var(--text);
+      padding: 48px 16px 64px;
+    }
+
+    .container { max-width: 680px; margin: 0 auto; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 40px; animation: fadeDown 0.6s ease both; }
+    .header-badge {
+      display: inline-block;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .header h1 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: clamp(26px, 5vw, 38px);
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+    .header p { color: var(--muted); font-size: 14px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 5px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .tab {
+      flex: 1; padding: 13px 0; border-radius: 12px; border: none;
+      cursor: pointer; font-weight: 700; font-size: 15px;
+      transition: all 0.25s; background: transparent; color: var(--muted);
+      font-family: 'Nanum Gothic', sans-serif;
+    }
+    .tab.active {
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(167,139,250,0.4);
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      padding: 32px 28px;
+      backdrop-filter: blur(12px);
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    /* Section */
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--accent1);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 14px; margin-top: 24px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    /* Row */
+    .row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+      padding: 6px 0;
+    }
+    .row-label {
+      font-size: 14px; color: #c4b5fd;
+      min-width: 160px; flex-shrink: 0;
+    }
+    .row-input { flex: 1; }
+
+    /* Input */
+    .money-wrap { position: relative; }
+    .money-input {
+      width: 100%; padding: 10px 44px 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.07);
+      color: var(--text); font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+      font-family: 'Nanum Gothic', sans-serif;
+    }
+    .money-input:focus { border-color: var(--accent1); }
+    .money-input::placeholder { color: #4b5563; }
+    .money-unit {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); color: #6b7280; font-size: 12px;
+    }
+
+    /* Select */
+    select {
+      width: 100%; padding: 10px 14px;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.07);
+      color: var(--text); font-size: 14px; outline: none;
+      cursor: pointer; font-family: 'Nanum Gothic', sans-serif;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a5b4fc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    select option { background: #1e1b4b; }
+
+    /* Checkbox */
+    .checkbox-row {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--accent1); cursor: pointer;
+    }
+    .checkbox-row span { font-size: 14px; color: var(--muted); }
+
+    /* Counter */
+    .counter { display: flex; align-items: center; gap: 10px; }
+    .counter-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid rgba(167,139,250,0.4);
+      background: rgba(167,139,250,0.12);
+      color: var(--accent1); font-size: 20px;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-weight: 700;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+    .counter-btn:hover { background: rgba(167,139,250,0.25); }
+    .counter-val {
+      min-width: 48px; text-align: center;
+      font-size: 16px; font-weight: 700;
+    }
+
+    /* Calc button */
+    .calc-btn {
+      width: 100%; padding: 14px;
+      margin-top: 24px; border-radius: 12px; border: none;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      color: #fff; font-size: 16px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.5px;
+      box-shadow: 0 4px 28px rgba(167,139,250,0.4);
+      transition: opacity 0.2s, transform 0.15s;
+      font-family: 'Nanum Gothic', sans-serif;
+    }
+    .calc-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .calc-btn:active { transform: translateY(0); }
+
+    /* Result */
+    .result-box {
+      margin-top: 24px;
+      background: rgba(167,139,250,0.07);
+      border: 1px solid rgba(167,139,250,0.25);
+      border-radius: 16px; padding: 20px 24px;
+      animation: fadeUp 0.35s ease both;
+    }
+    .result-row {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 7px 0;
+    }
+    .result-label { font-size: 14px; color: var(--muted); }
+    .result-label.big { font-size: 15px; color: var(--text); font-weight: 700; }
+    .result-val { font-size: 15px; font-weight: 600; color: var(--text); }
+    .result-val.accent { color: var(--accent1); }
+    .result-val.big { font-size: 24px; font-weight: 900; color: var(--accent2); }
+    .result-divider { height: 1px; background: rgba(167,139,250,0.2); margin: 8px 0; }
+
+    .error-box {
+      margin-top: 16px; color: var(--danger);
+      background: rgba(248,113,113,0.1);
+      border-radius: 10px; padding: 13px 16px;
+      font-size: 14px; border: 1px solid rgba(248,113,113,0.2);
+    }
+
+    /* Rate table */
+    .rate-toggle {
+      margin-top: 28px; width: 100%; background: none;
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--muted); font-size: 13px; font-weight: 700;
+      padding: 10px 16px; cursor: pointer;
+      text-align: left; transition: border-color 0.2s;
+      font-family: 'Nanum Gothic', sans-serif;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .rate-toggle:hover { border-color: var(--accent1); }
+    .rate-table-wrap { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .rate-table-wrap.open { max-height: 300px; }
+    table { width: 100%; margin-top: 12px; font-size: 13px; border-collapse: collapse; }
+    th { padding: 9px 12px; text-align: left; color: var(--accent1); border-bottom: 1px solid rgba(167,139,250,0.2); font-weight: 700; }
+    td { padding: 8px 12px; color: #c4b5fd; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+    td.rate { color: var(--accent2); font-weight: 700; }
+
+    /* Footer */
+    .footer { text-align: center; margin-top: 22px; color: #4b5563; font-size: 12px; line-height: 1.8; }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 520px) {
+      .card { padding: 22px 16px; }
+      .row { flex-direction: column; align-items: flex-start; }
+      .row-label { min-width: unset; }
+      .row-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">2024 한국 세법 기준</div>
+    <h1>상속세 · 증여세 계산기</h1>
+    <p>과세표준 및 납부 세액을 간편하게 계산하세요</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('inherit', this)">🏛 상속세</button>
+    <button class="tab" onclick="switchTab('gift', this)">🎁 증여세</button>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- 상속세 Panel -->
+    <div id="panel-inherit">
+      <div class="section-label">재산 정보</div>
+
+      <div class="row">
+        <span class="row-label">총 상속재산</span>
+        <div class="row-input money-wrap">
+          <input class="money-input" id="i-asset" type="text" placeholder="금액 입력 (원)" oninput="fmtInput(this)" />
+          <span class="money-unit">원</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">채무 · 공과금</span>
+        <div class="row-input money-wrap">
+          <input class="money-input" id="i-debt" type="text" placeholder="금액 입력 (원)" oninput="fmtInput(this)" />
+          <span class="money-unit">원</span>
+        </div>
+      </div>
+
+      <div class="section-label">공제 항목</div>
+
+      <div class="row">
+        <span class="row-label">배우자 공제</span>
+        <div class="row-input">
+          <label class="checkbox-row">
+            <input type="checkbox" id="i-spouse-check" onchange="toggleSpouse()" />
+            <span>배우자 있음</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="row" id="spouse-amount-row" style="display:none">
+        <span class="row-label">배우자 실제 상속액</span>
+        <div class="row-input money-wrap">
+          <input class="money-input" id="i-spouse-amt" type="text" placeholder="미입력 시 5억 적용" oninput="fmtInput(this)" />
+          <span class="money-unit">원</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">자녀 수</span>
+        <div class="row-input"><div class="counter" id="c-child"><button class="counter-btn" onclick="counter('child',-1)">−</button><span class="counter-val" id="v-child">0명</span><button class="counter-btn" onclick="counter('child',1)">+</button></div></div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">미성년자 공제 (잔여연수)</span>
+        <div class="row-input"><div class="counter"><button class="counter-btn" onclick="counter('minor',-1)">−</button><span class="counter-val" id="v-minor">0년</span><button class="counter-btn" onclick="counter('minor',1)">+</button></div></div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">노인(65세↑) 수</span>
+        <div class="row-input"><div class="counter"><button class="counter-btn" onclick="counter('elderly',-1)">−</button><span class="counter-val" id="v-elderly">0명</span><button class="counter-btn" onclick="counter('elderly',1)">+</button></div></div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">장애인 공제 (잔여연수)</span>
+        <div class="row-input"><div class="counter"><button class="counter-btn" onclick="counter('disabled',-1)">−</button><span class="counter-val" id="v-disabled">0년</span><button class="counter-btn" onclick="counter('disabled',1)">+</button></div></div>
+      </div>
+
+      <button class="calc-btn" onclick="calcInherit()">계산하기</button>
+      <div id="inherit-result"></div>
+    </div>
+
+    <!-- 증여세 Panel -->
+    <div id="panel-gift" style="display:none">
+      <div class="section-label">증여 정보</div>
+
+      <div class="row">
+        <span class="row-label">증여금액</span>
+        <div class="row-input money-wrap">
+          <input class="money-input" id="g-amount" type="text" placeholder="금액 입력 (원)" oninput="fmtInput(this)" />
+          <span class="money-unit">원</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">수증자와의 관계</span>
+        <div class="row-input">
+          <select id="g-rel">
+            <option value="spouse">배우자 (공제 6억원)</option>
+            <option value="adult_child" selected>성년 자녀 (공제 5,000만원)</option>
+            <option value="minor_child">미성년 자녀 (공제 2,000만원)</option>
+            <option value="other_lineal">기타 직계존비속 (공제 1,000만원)</option>
+            <option value="sibling">형제자매 (공제 1,000만원)</option>
+            <option value="others">기타 (공제 1,000만원)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="row-label">10년 내 이전 증여액</span>
+        <div class="row-input money-wrap">
+          <input class="money-input" id="g-prev" type="text" placeholder="동일인 기준 합산 (원)" oninput="fmtInput(this)" />
+          <span class="money-unit">원</span>
+        </div>
+      </div>
+
+      <button class="calc-btn" onclick="calcGift()">계산하기</button>
+      <div id="gift-result"></div>
+    </div>
+
+    <!-- 세율표 -->
+    <button class="rate-toggle" onclick="toggleTable(this)">
+      <span>📊 세율표 보기 (상속·증여세 동일)</span>
+      <span id="toggle-icon">▼</span>
+    </button>
+    <div class="rate-table-wrap" id="rate-table-wrap">
+      <table>
+        <thead>
+          <tr><th>과세표준</th><th>세율</th><th>누진공제액</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1억 이하</td><td class="rate">10%</td><td>—</td></tr>
+          <tr><td>1억 초과 ~ 5억 이하</td><td class="rate">20%</td><td>1,000만원</td></tr>
+          <tr><td>5억 초과 ~ 10억 이하</td><td class="rate">30%</td><td>6,000만원</td></tr>
+          <tr><td>10억 초과 ~ 30억 이하</td><td class="rate">40%</td><td>1억 6,000만원</td></tr>
+          <tr><td>30억 초과</td><td class="rate">50%</td><td>4억 6,000만원</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    ※ 본 계산기는 참고용이며, 실제 납부 세액은 담당 세무사를 통해 확인하시기 바랍니다.<br>
+    상속세 및 증여세법 기준 | 2024년 적용
+  </div>
+</div>
+
+<script>
+  // ── 상수 ──
+  const BRACKETS = [
+    { limit: 1e8,   rate: 0.10, ded: 0        },
+    { limit: 5e8,   rate: 0.20, ded: 1e7      },
+    { limit: 1e9,   rate: 0.30, ded: 6e7      },
+    { limit: 3e9,   rate: 0.40, ded: 1.6e8    },
+    { limit: Infinity, rate: 0.50, ded: 4.6e8 },
+  ];
+  const GIFT_DED = { spouse:6e8, adult_child:5e7, minor_child:2e7, other_lineal:1e7, sibling:1e7, others:1e7 };
+  const counters = { child: 0, minor: 0, elderly: 0, disabled: 0 };
+  const counterUnits = { child: '명', minor: '년', elderly: '명', disabled: '년' };
+
+  // ── 유틸 ──
+  function fmt(n) { return n === 0 ? '0' : Math.round(n).toLocaleString('ko-KR'); }
+  function parseVal(id) { return parseInt((document.getElementById(id).value||'').replace(/,/g,''),10)||0; }
+
+  function fmtInput(el) {
+    const raw = el.value.replace(/[^0-9]/g,'');
+    el.value = raw ? parseInt(raw,10).toLocaleString('ko-KR') : '';
+  }
+
+  function calcTax(base) {
+    if (base <= 0) return 0;
+    for (const b of BRACKETS) {
+      if (base <= b.limit) return Math.floor(base * b.rate - b.ded);
+    }
+  }
+
+  // ── Tab ──
+  function switchTab(name, btn) {
+    document.getElementById('panel-inherit').style.display = name === 'inherit' ? '' : 'none';
+    document.getElementById('panel-gift').style.display    = name === 'gift'    ? '' : 'none';
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── Counter ──
+  function counter(key, delta) {
+    counters[key] = Math.max(0, counters[key] + delta);
+    document.getElementById('v-' + key).textContent = counters[key] + counterUnits[key];
+  }
+
+  // ── Spouse toggle ──
+  function toggleSpouse() {
+    const show = document.getElementById('i-spouse-check').checked;
+    document.getElementById('spouse-amount-row').style.display = show ? '' : 'none';
+  }
+
+  // ── 상속세 ──
+  function calcInherit() {
+    const asset = parseVal('i-asset');
+    const debt  = parseVal('i-debt');
+    const net   = asset - debt;
+    const el    = document.getElementById('inherit-result');
+
+    if (net <= 0) {
+      el.innerHTML = `<div class="error-box">⚠️ 순 상속재산(재산 - 채무)이 0 이하입니다. 재산 금액을 확인해주세요.</div>`;
+      return;
+    }
+
+    let deductions = 2e8; // 기초공제
+    let spouseDed = 0;
+    if (document.getElementById('i-spouse-check').checked) {
+      const sa = parseVal('i-spouse-amt');
+      spouseDed = Math.max(sa || 5e8, 5e8);
+      deductions += spouseDed;
+    }
+    deductions += counters.child   * 5e7;
+    deductions += counters.minor   * 1e7;
+    deductions += counters.elderly * 5e7;
+    deductions += counters.disabled * 1e7;
+    deductions += 2e8; // 금융재산 공제
+
+    const taxBase = Math.max(0, net - deductions);
+    const tax     = calcTax(taxBase);
+
+    el.innerHTML = `
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">총 상속재산</span><span class="result-val">${fmt(asset)}원</span></div>
+        <div class="result-row"><span class="result-label">채무 · 공과금</span><span class="result-val">− ${fmt(debt)}원</span></div>
+        <div class="result-row"><span class="result-label">순 상속재산</span><span class="result-val">${fmt(net)}원</span></div>
+        <div class="result-row"><span class="result-label">총 공제액</span><span class="result-val accent">− ${fmt(deductions)}원</span></div>
+        <div class="result-row"><span class="result-label">과세표준</span><span class="result-val">${fmt(taxBase)}원</span></div>
+        <div class="result-divider"></div>
+        <div class="result-row"><span class="result-label big">납부 세액</span><span class="result-val big">${fmt(tax)}원</span></div>
+        ${spouseDed ? `<div style="margin-top:10px;font-size:12px;color:#6b7280">* 배우자 공제: ${fmt(spouseDed)}원 적용</div>` : ''}
+        <div style="margin-top:4px;font-size:12px;color:#6b7280">* 금융재산 공제(2억) 자동 포함</div>
+      </div>`;
+  }
+
+  // ── 증여세 ──
+  function calcGift() {
+    const amount = parseVal('g-amount');
+    const prev   = parseVal('g-prev');
+    const rel    = document.getElementById('g-rel').value;
+    const total  = amount + prev;
+    const ded    = GIFT_DED[rel] || 0;
+    const taxBase = Math.max(0, total - ded);
+    const tax    = calcTax(taxBase);
+
+    const relLabels = {
+      spouse:'배우자', adult_child:'성년 자녀', minor_child:'미성년 자녀',
+      other_lineal:'기타 직계존비속', sibling:'형제자매', others:'기타'
+    };
+
+    document.getElementById('gift-result').innerHTML = `
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">이번 증여액</span><span class="result-val">${fmt(amount)}원</span></div>
+        ${prev ? `<div class="result-row"><span class="result-label">10년 내 이전 증여액</span><span class="result-val">+ ${fmt(prev)}원</span></div>` : ''}
+        <div class="result-row"><span class="result-label">합산 증여액</span><span class="result-val">${fmt(total)}원</span></div>
+        <div class="result-row"><span class="result-label">${relLabels[rel]} 공제</span><span class="result-val accent">− ${fmt(ded)}원</span></div>
+        <div class="result-row"><span class="result-label">과세표준</span><span class="result-val">${fmt(taxBase)}원</span></div>
+        <div class="result-divider"></div>
+        <div class="result-row"><span class="result-label big">납부 세액</span><span class="result-val big">${fmt(tax)}원</span></div>
+        <div style="margin-top:6px;font-size:12px;color:#6b7280">* 10년 단위 합산 과세 기준 적용</div>
+      </div>`;
+  }
+
+  // ── 세율표 토글 ──
+  function toggleTable(btn) {
+    const wrap = document.getElementById('rate-table-wrap');
+    const icon = document.getElementById('toggle-icon');
+    const open = wrap.classList.toggle('open');
+    icon.textContent = open ? '▲' : '▼';
+  }
+</script>
+</body>
+</html>
