@@ -317,7 +317,7 @@ function getAcqRate() {
   let rate = 0, label = '', note = '';
   if (prop === '주택' && method === '매매') {
     if (count === 1) {
-      if (price <= 60000000) rate = 0.01; else if (price <= 900000000) rate = 0.02; else rate = 0.03;
+      if (price <= 600000000) rate = 0.01; else if (price <= 900000000) rate = 0.02; else rate = 0.03;
       label = (rate*100)+'%'; note = '1주택자 일반세율 (6억 이하 1% · 6~9억 2% · 9억 초과 3%)';
     } else if (count === 2) {
       if (region === '조정') { rate = 0.08; label = '8%'; note = '조정대상지역 2주택 중과'; }
