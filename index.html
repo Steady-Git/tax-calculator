@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부동산 세금 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f3ef;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --text: #1a1917;
+    --text-muted: #7a7872;
+    --accent: #2d5a3d;
+    --accent-text: #1e3d29;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 600px; margin: 0 auto; }
+  header { margin-bottom: 1.5rem; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; margin-bottom: 1rem; }
+  .tab-btn { flex: 1; padding: 9px 4px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: var(--accent); color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 0.75rem; }
+  .card-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; }
+  .field { margin-bottom: 0.875rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+  .field input, .field select { width: 100%; height: 40px; padding: 0 12px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); appearance: none; transition: border-color 0.15s, box-shadow 0.15s; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); background: #fff; }
+  .select-wrap { position: relative; }
+  .select-wrap::after { content: ''; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--text-muted); pointer-events: none; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .radio-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .radio-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; font-weight: 400; border: 1px solid var(--border); border-radius: 100px; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .radio-btn input { display: none; }
+  .radio-btn:hover { border-color: var(--accent); color: var(--text); }
+  .radio-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+
+  .result-card { background: var(--accent); border-radius: var(--radius); padding: 1.5rem; margin-top: 1rem; color: #fff; }
+  .result-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; margin-bottom: 0.5rem; }
+  .result-total { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 1.25rem; }
+  .breakdown { border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1rem; display: flex; flex-direction: column; gap: 8px; }
+  .breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .breakdown-row .lbl { opacity: 0.75; }
+  .breakdown-row .val { font-weight: 500; }
+  .rate-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(255,255,255,0.2); margin-left: 5px; }
+  .breakdown-row.subtotal { border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; margin-top: 2px; }
+  .breakdown-row.subtotal .lbl, .breakdown-row.subtotal .val { font-weight: 700; font-size: 14px; }
+  .info-note { background: #eef4f0; border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; font-size: 12px; color: var(--accent-text); line-height: 1.6; margin-top: 0.75rem; }
+
+  /* 저장/인쇄 버튼 */
+  .action-btns { display: flex; gap: 8px; margin-top: 1rem; }
+  .action-btn { flex: 1; height: 40px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .action-btn:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+  .action-btn svg { width: 15px; height: 15px; }
+
+  /* 인쇄용 */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .tabs, .action-btns, footer, .card { box-shadow: none; }
+    .tab-panel { display: block !important; }
+    .tab-panel:not(.active) { display: none !important; }
+    .action-btns { display: none; }
+  }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); line-height: 1.7; }
+  @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } .result-total { font-size: 26px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>부동산 세금 계산기</h1>
+    <p>취득세 · 재산세 · 종합부동산세를 간편하게 계산해보세요.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtn-acquisition" onclick="switchTab('acquisition')">취득세</button>
+    <button class="tab-btn" id="tabBtn-property" onclick="switchTab('property')">재산세</button>
+    <button class="tab-btn" id="tabBtn-comprehensive" onclick="switchTab('comprehensive')">종합부동산세</button>
+  </div>
+
+  <!-- ===== 취득세 ===== -->
+  <div class="tab-panel active" id="tab-acquisition">
+    <div class="card">
+      <div class="card-title">부동산 유형</div>
+      <div class="radio-group" id="acqPropTypeGroup">
+        <label class="radio-btn active"><input type="radio" name="acqPropType" value="주택" checked>주택</label>
+        <label class="radio-btn"><input type="radio" name="acqPropType" value="토지">토지</label>
+        <label class="radio-btn"><input type="radio" name="acqPropType" value="상업용">상업용 건물</label>
+        <label class="radio-btn"><input type="radio" name="acqPropType" value="농지">농지</label>
+      </div>
+    </div>
+    <div class="card" id="acqHousingOptions">
+      <div class="card-title">주택 취득 조건</div>
+      <div class="row2">
+        <div class="field">
+          <label>취득 후 주택 수</label>
+          <div class="select-wrap">
+            <select id="acqHouseCount">
+              <option value="1">1주택 (무주택자)</option>
+              <option value="2">2주택</option>
+              <option value="3">3주택</option>
+              <option value="4">4주택 이상</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>지역 구분</label>
+          <div class="select-wrap">
+            <select id="acqRegion">
+              <option value="조정">조정대상지역</option>
+              <option value="비조정">비조정대상지역</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">취득 정보</div>
+      <div class="row2">
+        <div class="field">
+          <label>취득 방법</label>
+          <div class="select-wrap">
+            <select id="acqMethod">
+              <option value="매매">매매</option>
+              <option value="증여">증여</option>
+              <option value="상속">상속</option>
+              <option value="신축">신축</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>취득가액 (원)</label>
+          <input type="text" id="acqPrice" placeholder="예: 500,000,000" />
+        </div>
+      </div>
+    </div>
+    <div class="result-card" id="acqResultCard">
+      <div class="result-label">예상 취득세 합계</div>
+      <div class="result-total" id="acqResultTotal">취득가액을 입력하세요</div>
+      <div class="breakdown" id="acqBreakdown" style="display:none;"></div>
+    </div>
+    <div class="info-note" id="acqInfoNote" style="display:none;"></div>
+    <div class="action-btns" id="acqActions" style="display:none;">
+      <button class="action-btn" onclick="printResult('acquisition')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        인쇄하기
+      </button>
+      <button class="action-btn" onclick="saveResult('acquisition')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        텍스트 저장
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== 재산세 ===== -->
+  <div class="tab-panel" id="tab-property">
+    <div class="card">
+      <div class="card-title">과세 대상</div>
+      <div class="radio-group" id="propTaxTypeGroup">
+        <label class="radio-btn active"><input type="radio" name="propTaxType" value="주택" checked>주택</label>
+        <label class="radio-btn"><input type="radio" name="propTaxType" value="토지">토지 (일반)</label>
+        <label class="radio-btn"><input type="radio" name="propTaxType" value="건축물">건축물</label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">공시가격 정보</div>
+      <div class="field">
+        <label>공시가격 (원) — 국토부 부동산공시가격 알리미에서 확인 가능</label>
+        <input type="text" id="propPrice" placeholder="예: 300,000,000" />
+      </div>
+      <div class="field" id="propHouseTypeField">
+        <label>주택 유형</label>
+        <div class="select-wrap">
+          <select id="propHouseType">
+            <option value="일반">일반 주택</option>
+            <option value="별장">별장</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="result-card" id="propResultCard">
+      <div class="result-label">예상 재산세 합계</div>
+      <div class="result-total" id="propResultTotal">공시가격을 입력하세요</div>
+      <div class="breakdown" id="propBreakdown" style="display:none;"></div>
+    </div>
+    <div class="info-note" id="propInfoNote" style="display:none;"></div>
+    <div class="action-btns" id="propActions" style="display:none;">
+      <button class="action-btn" onclick="printResult('property')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        인쇄하기
+      </button>
+      <button class="action-btn" onclick="saveResult('property')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        텍스트 저장
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== 종합부동산세 ===== -->
+  <div class="tab-panel" id="tab-comprehensive">
+    <div class="card">
+      <div class="card-title">납세자 구분</div>
+      <div class="radio-group" id="compTypeGroup">
+        <label class="radio-btn active"><input type="radio" name="compType" value="일반" checked>일반 (개인)</label>
+        <label class="radio-btn"><input type="radio" name="compType" value="법인">법인</label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">주택 현황</div>
+      <div class="row2">
+        <div class="field">
+          <label>주택 수</label>
+          <div class="select-wrap">
+            <select id="compHouseCount">
+              <option value="1">1주택</option>
+              <option value="2">2주택</option>
+              <option value="3">3주택 이상</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>보유 주택 공시가격 합산 (원)</label>
+          <input type="text" id="compPrice" placeholder="예: 1,200,000,000" />
+        </div>
+      </div>
+      <div class="field" id="compAgeField">
+        <label>보유기간 / 연령 공제 (1세대 1주택)</label>
+        <div class="select-wrap">
+          <select id="compDeduction">
+            <option value="0">해당 없음</option>
+            <option value="0.2">보유 5~10년 (20%)</option>
+            <option value="0.4">보유 10~15년 (40%)</option>
+            <option value="0.5">보유 15년 이상 (50%)</option>
+            <option value="0.1">연령 60~65세 (10%)</option>
+            <option value="0.2">연령 65~70세 (20%)</option>
+            <option value="0.3">연령 70세 이상 (30%)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="result-card" id="compResultCard">
+      <div class="result-label">예상 종합부동산세 합계</div>
+      <div class="result-total" id="compResultTotal">공시가격 합산액을 입력하세요</div>
+      <div class="breakdown" id="compBreakdown" style="display:none;"></div>
+    </div>
+    <div class="info-note" id="compInfoNote" style="display:none;"></div>
+    <div class="action-btns" id="compActions" style="display:none;">
+      <button class="action-btn" onclick="printResult('comprehensive')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        인쇄하기
+      </button>
+      <button class="action-btn" onclick="saveResult('comprehensive')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        텍스트 저장
+      </button>
+    </div>
+  </div>
+
+  <footer>
+    본 계산기는 참고용이며, 실제 납부세액은 관할 지방자치단체에서 확인하시기 바랍니다.<br>
+    2024년 세법 기준으로 제작되었습니다.
+  </footer>
+</div>
+
+<script>
+/* ---- 탭 ---- */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tabBtn-' + tab).classList.add('active');
+}
+
+/* ---- 유틸 ---- */
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR') + ' 원'; }
+function parsePrice(s) { return parseInt((s || '').replace(/,/g, '')) || 0; }
+function fmtInput(el) {
+  let v = el.value.replace(/[^0-9]/g, '');
+  el.value = v ? parseInt(v).toLocaleString('ko-KR') : '';
+}
+
+/* =====================
+   취득세
+   ===================== */
+document.getElementById('acqPrice').addEventListener('input', function() { fmtInput(this); calcAcq(); });
+document.querySelectorAll('#tab-acquisition select').forEach(el => el.addEventListener('change', () => { updateAcqUI(); calcAcq(); }));
+document.querySelectorAll('input[name=acqPropType]').forEach(el => {
+  el.addEventListener('change', function() {
+    document.querySelectorAll('#acqPropTypeGroup .radio-btn').forEach(l => l.classList.remove('active'));
+    this.closest('.radio-btn').classList.add('active');
+    updateAcqUI(); calcAcq();
+  });
+});
+function updateAcqUI() {
+  const prop = document.querySelector('input[name=acqPropType]:checked').value;
+  document.getElementById('acqHousingOptions').style.display = prop === '주택' ? '' : 'none';
+}
+function getAcqRate() {
+  const prop = document.querySelector('input[name=acqPropType]:checked').value;
+  const method = document.getElementById('acqMethod').value;
+  const count = parseInt(document.getElementById('acqHouseCount').value);
+  const region = document.getElementById('acqRegion').value;
+  const price = parsePrice(document.getElementById('acqPrice').value);
+  let rate = 0, label = '', note = '';
+  if (prop === '주택' && method === '매매') {
+    if (count === 1) {
+      if (price <= 60000000) rate = 0.01; else if (price <= 900000000) rate = 0.02; else rate = 0.03;
+      label = (rate*100)+'%'; note = '1주택자 일반세율 (6억 이하 1% · 6~9억 2% · 9억 초과 3%)';
+    } else if (count === 2) {
+      if (region === '조정') { rate = 0.08; label = '8%'; note = '조정대상지역 2주택 중과'; }
+      else { if (price <= 600000000) rate = 0.01; else if (price <= 900000000) rate = 0.02; else rate = 0.03; label = (rate*100)+'%'; note = '비조정 2주택 (일반세율)'; }
+    } else if (count === 3) {
+      if (region === '조정') { rate = 0.12; label = '12%'; note = '조정대상지역 3주택 중과'; }
+      else { rate = 0.08; label = '8%'; note = '비조정 3주택 중과'; }
+    } else { rate = 0.12; label = '12%'; note = '4주택 이상 중과세율'; }
+  } else if (prop === '주택' && method === '증여') {
+    if (region === '조정' && count >= 2) { rate = 0.12; label = '12%'; note = '조정대상지역 증여 (다주택)'; }
+    else { rate = 0.035; label = '3.5%'; note = '주택 증여 취득세율'; }
+  } else if (prop === '주택' && method === '상속') { rate = 0.028; label = '2.8%'; note = '주택 상속 취득세율'; }
+  else if (prop === '주택' && method === '신축') { rate = 0.028; label = '2.8%'; note = '원시취득 (신축) 세율'; }
+  else if (prop === '토지') {
+    if (method === '상속') { rate = 0.028; label = '2.8%'; note = '토지 상속'; }
+    else if (method === '증여') { rate = 0.035; label = '3.5%'; note = '토지 증여'; }
+    else { rate = 0.04; label = '4%'; note = '토지 매매'; }
+  } else if (prop === '농지') {
+    if (method === '상속') { rate = 0.023; label = '2.3%'; note = '농지 상속'; }
+    else if (method === '증여') { rate = 0.035; label = '3.5%'; note = '농지 증여'; }
+    else { rate = 0.03; label = '3%'; note = '농지 자경 매매'; }
+  } else if (prop === '상업용') {
+    if (method === '상속') { rate = 0.028; label = '2.8%'; note = '상업용 건물 상속'; }
+    else if (method === '증여') { rate = 0.035; label = '3.5%'; note = '상업용 건물 증여'; }
+    else { rate = 0.04; label = '4%'; note = '상업용 건물 매매'; }
+  }
+  return { rate, label, note };
+}
+function calcAcq() {
+  const price = parsePrice(document.getElementById('acqPrice').value);
+  const totalEl = document.getElementById('acqResultTotal');
+  const breakEl = document.getElementById('acqBreakdown');
+  const infoEl = document.getElementById('acqInfoNote');
+  const actEl = document.getElementById('acqActions');
+  if (!price) { totalEl.textContent = '취득가액을 입력하세요'; breakEl.style.display = 'none'; infoEl.style.display = 'none'; actEl.style.display = 'none'; return; }
+  const { rate, label, note } = getAcqRate();
+  const acqTax = price * rate;
+  const eduTax = acqTax * 0.2;
+  const specialTax = (rate >= 0.04 || rate === 0.035 || rate === 0.028) ? acqTax * 0.2 : price * 0.002;
+  const total = acqTax + eduTax + specialTax;
+  totalEl.textContent = fmt(total);
+  breakEl.style.display = '';
+  breakEl.innerHTML = `
+    <div class="breakdown-row"><span class="lbl">취득세<span class="rate-pill">${label}</span></span><span class="val">${fmt(acqTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">지방교육세 (취득세×20%)</span><span class="val">${fmt(eduTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">농어촌특별세</span><span class="val">${fmt(specialTax)}</span></div>
+    <div class="breakdown-row subtotal"><span class="lbl">합계</span><span class="val">${fmt(total)}</span></div>`;
+  infoEl.style.display = ''; infoEl.textContent = '적용 기준: ' + note + '. 실제 세액은 관할 지자체에서 확인하세요.';
+  actEl.style.display = 'flex';
+}
+
+/* =====================
+   재산세
+   ===================== */
+document.getElementById('propPrice').addEventListener('input', function() { fmtInput(this); calcProp(); });
+document.querySelectorAll('#tab-property select').forEach(el => el.addEventListener('change', calcProp));
+document.querySelectorAll('input[name=propTaxType]').forEach(el => {
+  el.addEventListener('change', function() {
+    document.querySelectorAll('#propTaxTypeGroup .radio-btn').forEach(l => l.classList.remove('active'));
+    this.closest('.radio-btn').classList.add('active');
+    document.getElementById('propHouseTypeField').style.display = this.value === '주택' ? '' : 'none';
+    calcProp();
+  });
+});
+function calcProp() {
+  const type = document.querySelector('input[name=propTaxType]:checked').value;
+  const price = parsePrice(document.getElementById('propPrice').value);
+  const totalEl = document.getElementById('propResultTotal');
+  const breakEl = document.getElementById('propBreakdown');
+  const infoEl = document.getElementById('propInfoNote');
+  const actEl = document.getElementById('propActions');
+  if (!price) { totalEl.textContent = '공시가격을 입력하세요'; breakEl.style.display = 'none'; infoEl.style.display = 'none'; actEl.style.display = 'none'; return; }
+  let propTax = 0, note = '', rateLabel = '';
+  if (type === '주택') {
+    const houseType = document.getElementById('propHouseType').value;
+    if (houseType === '별장') { propTax = price * 0.6 * 0.04; rateLabel = '4%'; note = '별장 재산세 (공정시장가액비율 60%)'; }
+    else {
+      const base = price * 0.60;
+      if (base <= 60000000) { propTax = base * 0.001; rateLabel = '0.1%'; }
+      else if (base <= 150000000) { propTax = 60000 + (base-60000000)*0.0015; rateLabel = '0.15%'; }
+      else if (base <= 300000000) { propTax = 195000 + (base-150000000)*0.0025; rateLabel = '0.25%'; }
+      else { propTax = 570000 + (base-300000000)*0.004; rateLabel = '0.4%'; }
+      note = '일반 주택 재산세 (공정시장가액비율 60%, 누진세율)';
+    }
+  } else if (type === '토지') {
+    const base = price * 0.70;
+    if (base <= 50000000) { propTax = base * 0.002; rateLabel = '0.2%'; }
+    else if (base <= 100000000) { propTax = 100000 + (base-50000000)*0.003; rateLabel = '0.3%'; }
+    else { propTax = 250000 + (base-100000000)*0.005; rateLabel = '0.5%'; }
+    note = '일반 토지 재산세 (공정시장가액비율 70%, 누진세율)';
+  } else { propTax = price * 0.70 * 0.0025; rateLabel = '0.25%'; note = '건축물 재산세 (공정시장가액비율 70%)'; }
+  const cityTax = propTax * 0.20, eduTax = propTax * 0.20;
+  const fireTax = type === '주택' ? propTax * 0.20 : propTax * 0.5;
+  const total = propTax + cityTax + eduTax + fireTax;
+  totalEl.textContent = fmt(total);
+  breakEl.style.display = '';
+  breakEl.innerHTML = `
+    <div class="breakdown-row"><span class="lbl">재산세<span class="rate-pill">${rateLabel}</span></span><span class="val">${fmt(propTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">도시지역분 (재산세×20%)</span><span class="val">${fmt(cityTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">지방교육세 (재산세×20%)</span><span class="val">${fmt(eduTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">지역자원시설세</span><span class="val">${fmt(fireTax)}</span></div>
+    <div class="breakdown-row subtotal"><span class="lbl">합계</span><span class="val">${fmt(total)}</span></div>`;
+  infoEl.style.display = ''; infoEl.textContent = '적용 기준: ' + note + '. 재산세는 매년 7월(건물·주택 1/2)·9월(토지·주택 1/2) 고지서 기준입니다.';
+  actEl.style.display = 'flex';
+}
+
+/* =====================
+   종합부동산세
+   ===================== */
+document.getElementById('compPrice').addEventListener('input', function() { fmtInput(this); calcComp(); });
+document.querySelectorAll('#tab-comprehensive select').forEach(el => el.addEventListener('change', () => { updateCompUI(); calcComp(); }));
+document.querySelectorAll('input[name=compType]').forEach(el => {
+  el.addEventListener('change', function() {
+    document.querySelectorAll('#compTypeGroup .radio-btn').forEach(l => l.classList.remove('active'));
+    this.closest('.radio-btn').classList.add('active');
+    updateCompUI(); calcComp();
+  });
+});
+function updateCompUI() {
+  const type = document.querySelector('input[name=compType]:checked').value;
+  const count = document.getElementById('compHouseCount').value;
+  document.getElementById('compAgeField').style.display = (type === '일반' && count === '1') ? '' : 'none';
+}
+function calcComp() {
+  const type = document.querySelector('input[name=compType]:checked').value;
+  const count = document.getElementById('compHouseCount').value;
+  const price = parsePrice(document.getElementById('compPrice').value);
+  const deduction = parseFloat(document.getElementById('compDeduction').value) || 0;
+  const totalEl = document.getElementById('compResultTotal');
+  const breakEl = document.getElementById('compBreakdown');
+  const infoEl = document.getElementById('compInfoNote');
+  const actEl = document.getElementById('compActions');
+
+  if (!price) { totalEl.textContent = '공시가격 합산액을 입력하세요'; breakEl.style.display = 'none'; infoEl.style.display = 'none'; actEl.style.display = 'none'; return; }
+
+  // 공제액 및 공정시장가액비율
+  let exemption = 0, fairRatio = 0.60, note = '', rateLabel = '';
+  if (type === '법인') {
+    exemption = 0; fairRatio = 0.60;
+  } else {
+    if (count === '1') exemption = 1200000000; // 1세대 1주택 12억
+    else exemption = 900000000; // 다주택 9억
+  }
+
+  const taxBase = Math.max(0, (price - exemption) * fairRatio);
+  if (taxBase === 0) {
+    totalEl.textContent = '과세 대상 아님';
+    breakEl.style.display = '';
+    breakEl.innerHTML = `<div class="breakdown-row"><span class="lbl">과세표준</span><span class="val">0 원 (공제 후)</span></div>
+    <div class="breakdown-row"><span class="lbl">공시가격이 공제액 이하입니다</span><span class="val"></span></div>`;
+    infoEl.style.display = '';
+    const exemptionAmt = (exemption / 100000000).toFixed(0);
+    infoEl.textContent = `공시가격 합산액이 공제액(${exemptionAmt}억 원) 이하이므로 종합부동산세 과세 대상이 아닙니다.`;
+    actEl.style.display = 'none';
+    return;
+  }
+
+  // 세율 계산 (2024년 기준)
+  let compTax = 0;
+  if (type === '법인') {
+    compTax = taxBase * 0.05; rateLabel = '5%'; note = '법인 단일세율 5%';
+  } else if (count === '1') {
+    // 1주택 세율
+    if (taxBase <= 300000000) { compTax = taxBase * 0.005; rateLabel = '0.5%'; }
+    else if (taxBase <= 600000000) { compTax = 1500000 + (taxBase-300000000)*0.007; rateLabel = '0.7%'; }
+    else if (taxBase <= 1200000000) { compTax = 3600000 + (taxBase-600000000)*0.01; rateLabel = '1.0%'; }
+    else if (taxBase <= 2500000000) { compTax = 9600000 + (taxBase-1200000000)*0.014; rateLabel = '1.4%'; }
+    else if (taxBase <= 9400000000) { compTax = 27800000 + (taxBase-2500000000)*0.02; rateLabel = '2.0%'; }
+    else { compTax = 165800000 + (taxBase-9400000000)*0.03; rateLabel = '3.0%'; }
+    // 보유기간/연령 공제 적용
+    compTax = compTax * (1 - Math.min(deduction, 0.8));
+    note = '1세대 1주택 세율 (공제 12억 원)';
+  } else if (count === '2') {
+    if (taxBase <= 300000000) { compTax = taxBase * 0.005; rateLabel = '0.5%'; }
+    else if (taxBase <= 600000000) { compTax = 1500000 + (taxBase-300000000)*0.007; rateLabel = '0.7%'; }
+    else if (taxBase <= 1200000000) { compTax = 3600000 + (taxBase-600000000)*0.01; rateLabel = '1.0%'; }
+    else if (taxBase <= 2500000000) { compTax = 9600000 + (taxBase-1200000000)*0.014; rateLabel = '1.4%'; }
+    else if (taxBase <= 9400000000) { compTax = 27800000 + (taxBase-2500000000)*0.02; rateLabel = '2.0%'; }
+    else { compTax = 165800000 + (taxBase-9400000000)*0.03; rateLabel = '3.0%'; }
+    note = '2주택 세율 (공제 9억 원)';
+  } else {
+    // 3주택 이상 중과
+    if (taxBase <= 300000000) { compTax = taxBase * 0.005; rateLabel = '0.5%'; }
+    else if (taxBase <= 600000000) { compTax = 1500000 + (taxBase-300000000)*0.007; rateLabel = '0.7%'; }
+    else if (taxBase <= 1200000000) { compTax = 3600000 + (taxBase-600000000)*0.02; rateLabel = '2.0%'; }
+    else if (taxBase <= 2500000000) { compTax = 15600000 + (taxBase-1200000000)*0.03; rateLabel = '3.0%'; }
+    else if (taxBase <= 9400000000) { compTax = 54600000 + (taxBase-2500000000)*0.04; rateLabel = '4.0%'; }
+    else { compTax = 330600000 + (taxBase-9400000000)*0.05; rateLabel = '5.0%'; }
+    note = '3주택 이상 중과세율 (공제 9억 원)';
+  }
+
+  const eduTax = compTax * 0.20;
+  const total = compTax + eduTax;
+
+  totalEl.textContent = fmt(total);
+  breakEl.style.display = '';
+  breakEl.innerHTML = `
+    <div class="breakdown-row"><span class="lbl">과세표준</span><span class="val">${fmt(taxBase)}</span></div>
+    <div class="breakdown-row"><span class="lbl">종합부동산세<span class="rate-pill">${rateLabel}</span></span><span class="val">${fmt(compTax)}</span></div>
+    <div class="breakdown-row"><span class="lbl">농어촌특별세 (종부세×20%)</span><span class="val">${fmt(eduTax)}</span></div>
+    <div class="breakdown-row subtotal"><span class="lbl">합계</span><span class="val">${fmt(total)}</span></div>`;
+  infoEl.style.display = ''; infoEl.textContent = '적용 기준: ' + note + '. 종부세는 매년 12월 고지되며 실제 세액은 국세청에서 확인하세요.';
+  actEl.style.display = 'flex';
+}
+
+/* =====================
+   인쇄 / 저장
+   ===================== */
+const tabNames = { acquisition: '취득세', property: '재산세', comprehensive: '종합부동산세' };
+
+function getResultText(tab) {
+  const totalEl = document.getElementById(tab === 'acquisition' ? 'acqResultTotal' : tab === 'property' ? 'propResultTotal' : 'compResultTotal');
+  const breakEl = document.getElementById(tab === 'acquisition' ? 'acqBreakdown' : tab === 'property' ? 'propBreakdown' : 'compBreakdown');
+  const infoEl = document.getElementById(tab === 'acquisition' ? 'acqInfoNote' : tab === 'property' ? 'propInfoNote' : 'compInfoNote');
+  const rows = breakEl.querySelectorAll('.breakdown-row');
+  let lines = [`[부동산 세금 계산기 — ${tabNames[tab]}]`, `계산일: ${new Date().toLocaleDateString('ko-KR')}`, `합계: ${totalEl.textContent}`, ''];
+  rows.forEach(r => {
+    const lbl = r.querySelector('.lbl');
+    const val = r.querySelector('.val');
+    if (lbl && val && val.textContent) lines.push(`${lbl.textContent.replace(/\s+/g,' ').trim()}: ${val.textContent}`);
+  });
+  lines.push('', infoEl.textContent);
+  return lines.join('\n');
+}
+
+function printResult(tab) {
+  const text = getResultText(tab);
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>${tabNames[tab]} 계산 결과</title>
+  <style>body{font-family:'Noto Sans KR',sans-serif;max-width:480px;margin:2rem auto;color:#1a1917;line-height:1.8;}h2{font-size:18px;margin-bottom:1rem;}p{font-size:14px;white-space:pre-wrap;}</style>
+  </head><body><h2>${tabNames[tab]} 계산 결과</h2><p>${text.replace(/</g,'&lt;')}</p></body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function saveResult(tab) {
+  const text = getResultText(tab);
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${tabNames[tab]}_계산결과_${new Date().toLocaleDateString('ko-KR').replace(/\./g,'').replace(/ /g,'')}.txt`;
+  a.click();
+}
+
+// 초기 UI
+updateCompUI();
+</script>
+</body>
+</html>
