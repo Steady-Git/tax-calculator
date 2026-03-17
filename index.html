@@ -370,7 +370,7 @@ function getTaxRate() {
 
   if (prop === '주택' && method === '매매') {
     if (count === 1) {
-      if (price <= 60000000) rate = 0.01;
+      if (price <= 600000000) rate = 0.01;
       else if (price <= 900000000) rate = 0.02;
       else rate = 0.03;
       label = rate * 100 + '%';
