@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>특수관계인 저가·고가양도 세금 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060810;
+  --bg2:#0d1117;
+  --card:#111827;
+  --card2:rgba(255,255,255,0.03);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.05);
+  --low:#3b82f6;
+  --low2:#60a5fa;
+  --high:#f59e0b;
+  --high2:#fbbf24;
+  --green:#10b981;
+  --red:#ef4444;
+  --text:#f1f5f9;
+  --text2:#94a3b8;
+  --text3:#475569;
+}
+body{
+  min-height:100vh;
+  background:var(--bg);
+  font-family:'Pretendard','Nanum Gothic','Malgun Gothic',sans-serif;
+  color:var(--text);
+  padding:0 0 80px;
+  overflow-x:hidden;
+}
+
+/* ── Hero ── */
+.hero{
+  position:relative;
+  padding:60px 24px 52px;
+  text-align:center;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(59,130,246,0.13) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid rgba(59,130,246,0.35);
+  border-radius:999px;padding:5px 14px;
+  font-size:11px;font-weight:700;color:var(--low2);
+  letter-spacing:1.5px;text-transform:uppercase;
+  background:rgba(59,130,246,0.08);
+  margin-bottom:20px;
+}
+.hero h1{
+  font-size:clamp(24px,4.5vw,42px);
+  font-weight:900;line-height:1.18;
+  letter-spacing:-1.5px;margin-bottom:12px;
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--low2),#a78bfa,var(--high2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{color:var(--text2);font-size:14px;line-height:1.8;max-width:520px;margin:0 auto;}
+.hero-laws{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:8px;
+  margin-top:20px;
+}
+.law-chip{
+  font-size:11px;font-weight:600;color:var(--text3);
+  border:1px solid var(--border);border-radius:6px;
+  padding:3px 10px;background:var(--card2);
+}
+
+/* ── Main layout ── */
+.main{max-width:860px;margin:0 auto;padding:0 20px;}
+
+/* ── Mode selector ── */
+.mode-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  margin-bottom:28px;
+}
+.mode-card{
+  border-radius:16px;border:2px solid var(--border);
+  padding:22px 20px;cursor:pointer;
+  background:var(--card2);
+  transition:all .22s;position:relative;overflow:hidden;
+}
+.mode-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  opacity:0;transition:opacity .22s;
+}
+.mode-card.low-card::before{background:linear-gradient(90deg,var(--low),var(--low2));}
+.mode-card.high-card::before{background:linear-gradient(90deg,var(--high),var(--high2));}
+.mode-card.active{border-color:transparent;}
+.mode-card.active::before{opacity:1;}
+.mode-card.active.low-card{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.3);}
+.mode-card.active.high-card{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);}
+.mode-icon{font-size:28px;margin-bottom:10px;}
+.mode-title{font-size:16px;font-weight:800;margin-bottom:6px;}
+.mode-card.low-card .mode-title{color:var(--low2);}
+.mode-card.high-card .mode-title{color:var(--high2);}
+.mode-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* ── Card ── */
+.card{
+  background:var(--card);border-radius:20px;
+  border:1px solid var(--border);padding:28px 24px;
+  margin-bottom:16px;
+}
+
+/* ── Section label ── */
+.slabel{
+  font-size:10px;font-weight:800;letter-spacing:2.5px;
+  text-transform:uppercase;margin-bottom:14px;margin-top:24px;
+  display:flex;align-items:center;gap:10px;
+}
+.slabel:first-child{margin-top:0;}
+.slabel::after{content:'';flex:1;height:1px;background:currentColor;opacity:.15;}
+
+/* ── Form rows ── */
+.frow{display:flex;align-items:flex-start;gap:14px;padding:5px 0;}
+.flabel{
+  font-size:13px;color:var(--text2);
+  min-width:190px;flex-shrink:0;line-height:1;
+  padding-top:10px;
+}
+.flabel small{display:block;font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4;}
+.finput{flex:1;}
+
+.iw{position:relative;}
+.inp{
+  width:100%;padding:10px 48px 10px 14px;
+  border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.05);
+  color:var(--text);font-size:14px;font-weight:600;
+  outline:none;transition:border-color .2s,background .2s;
+  font-family:inherit;
+}
+.inp:focus{border-color:rgba(59,130,246,0.5);background:rgba(59,130,246,0.05);}
+.inp::placeholder{color:var(--text3);font-weight:400;}
+.iunit{
+  position:absolute;right:12px;top:50%;
+  transform:translateY(-50%);
+  color:var(--text3);font-size:12px;font-weight:600;
+}
+select.inp{
+  appearance:none;cursor:pointer;padding-right:36px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 4.5L11 1' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+select.inp option{background:#1e293b;}
+
+/* ── Info callout ── */
+.callout{
+  border-radius:12px;padding:14px 16px;
+  font-size:13px;line-height:1.7;margin:12px 0 4px;
+}
+.callout.blue{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;}
+.callout.amber{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fcd34d;}
+.callout.green{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#6ee7b7;}
+.callout.red{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;}
+.callout strong{font-weight:800;}
+
+/* ── Calc button ── */
+.calc-btn{
+  width:100%;padding:15px;
+  margin-top:20px;border-radius:12px;border:none;
+  font-size:15px;font-weight:800;cursor:pointer;
+  font-family:inherit;letter-spacing:.3px;
+  transition:all .2s;
+}
+.calc-btn.low{
+  background:linear-gradient(90deg,#1d4ed8,var(--low));
+  color:#fff;box-shadow:0 4px 28px rgba(59,130,246,.35);
+}
+.calc-btn.high{
+  background:linear-gradient(90deg,#b45309,var(--high));
+  color:#fff;box-shadow:0 4px 28px rgba(245,158,11,.35);
+}
+.calc-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,.4);}
+.calc-btn:active{transform:translateY(0);}
+
+/* ── Result ── */
+.result-wrap{margin-top:24px;animation:fadeUp .4s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.r-section{margin-bottom:20px;}
+.r-title{
+  font-size:11px;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.r-title::after{content:'';flex:1;height:1px;background:currentColor;opacity:.15;}
+
+.r-block{
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border2);
+  border-radius:14px;overflow:hidden;
+}
+.rrow{
+  display:flex;justify-content:space-between;
+  align-items:center;padding:11px 16px;
+  border-bottom:1px solid var(--border2);
+}
+.rrow:last-child{border-bottom:none;}
+.rrow.sub{background:rgba(255,255,255,0.02);}
+.rrow.total{
+  background:rgba(255,255,255,0.04);
+  padding:14px 16px;
+}
+.rl2{font-size:13px;color:var(--text2);}
+.rl2.bold{color:var(--text);font-weight:700;font-size:14px;}
+.rv{font-size:14px;font-weight:700;color:var(--text);}
+.rv.blue{color:var(--low2);}
+.rv.amber{color:var(--high2);}
+.rv.green{color:var(--green);}
+.rv.red{color:var(--red);}
+.rv.big{font-size:22px;font-weight:900;}
+.rv.big.blue{color:var(--low2);}
+.rv.big.amber{color:var(--high2);}
+.rv.big.green{color:var(--green);}
+.divrow{height:1px;background:rgba(255,255,255,0.08);margin:4px 0;}
+
+.badge{
+  display:inline-block;font-size:11px;font-weight:700;
+  border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:middle;
+}
+.badge.pass{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3);}
+.badge.fail{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+.badge.warn{background:rgba(245,158,11,0.15);color:var(--high2);border:1px solid rgba(245,158,11,0.3);}
+
+.r-note{
+  font-size:12px;color:var(--text3);
+  padding:10px 16px;line-height:1.7;
+  border-top:1px solid var(--border2);
+}
+
+/* ── Summary box ── */
+.summary-box{
+  border-radius:16px;padding:22px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));
+}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.s-item{
+  background:rgba(255,255,255,0.04);
+  border-radius:12px;padding:14px;
+  border:1px solid var(--border2);
+}
+.s-item-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;letter-spacing:.5px;}
+.s-item-val{font-size:18px;font-weight:900;}
+.s-total{
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;padding:16px;
+  border:1px solid rgba(255,255,255,0.1);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.s-total-label{font-size:14px;font-weight:700;color:var(--text2);}
+.s-total-val{font-size:26px;font-weight:900;color:var(--text);}
+
+/* ── Law table ── */
+.law-section{margin-top:24px;}
+.law-toggle-btn{
+  width:100%;background:var(--card2);
+  border:1px solid var(--border);border-radius:12px;
+  padding:13px 18px;color:var(--text2);
+  font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:border-color .2s;
+}
+.law-toggle-btn:hover{border-color:rgba(255,255,255,0.15);}
+.law-body{
+  max-height:0;overflow:hidden;
+  transition:max-height .35s ease;
+}
+.law-body.open{max-height:600px;}
+.law-inner{
+  margin-top:8px;background:var(--card2);
+  border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;
+}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{
+  padding:10px 14px;text-align:left;
+  background:rgba(255,255,255,0.04);
+  color:var(--text2);font-weight:700;
+  border-bottom:1px solid var(--border);
+}
+td{
+  padding:10px 14px;color:var(--text3);
+  border-bottom:1px solid var(--border2);
+  line-height:1.6;vertical-align:top;
+}
+tr:last-child td{border-bottom:none;}
+td.hl{color:var(--text2);}
+
+/* ── Error ── */
+.err-box{
+  background:rgba(239,68,68,0.08);
+  border:1px solid rgba(239,68,68,0.25);
+  border-radius:12px;padding:14px 18px;
+  color:#fca5a5;font-size:14px;margin-top:16px;
+}
+
+.no-tax-box{
+  border-radius:14px;padding:22px;text-align:center;
+  background:rgba(16,185,129,0.07);
+  border:1px solid rgba(16,185,129,0.25);
+  color:var(--green);font-weight:700;font-size:15px;margin-top:16px;
+}
+.no-tax-box p{font-size:13px;font-weight:400;color:#6ee7b7;margin-top:6px;}
+
+footer{
+  text-align:center;margin-top:28px;
+  color:var(--text3);font-size:12px;line-height:1.9;
+}
+
+@media(max-width:600px){
+  .mode-grid{grid-template-columns:1fr;}
+  .frow{flex-direction:column;gap:6px;}
+  .flabel{min-width:unset;padding-top:0;}
+  .finput{width:100%;}
+  .summary-grid{grid-template-columns:1fr;}
+  .card{padding:20px 14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">⚖️ 특수관계인 거래 세금 분석</div>
+  <h1>저가·고가 양도<br><em>증여세 & 양도소득세</em> 계산기</h1>
+  <p>부당행위계산 부인 규정을 포함한 정확한 세금 분석<br>매도인·매수인 양측의 세부담을 모두 계산합니다</p>
+  <div class="hero-laws">
+    <span class="law-chip">상증법 §35 증여의제</span>
+    <span class="law-chip">소득세법 §101 부당행위계산부인</span>
+    <span class="law-chip">법인세법 §52 부당행위계산부인</span>
+    <span class="law-chip">소득세법 §96·97 양도가액·취득가액</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Mode selector -->
+  <div class="mode-grid">
+    <div class="mode-card low-card active" id="mc-low" onclick="setMode('low')">
+      <div class="mode-icon">📉</div>
+      <div class="mode-title">저가 양도</div>
+      <div class="mode-desc">시가보다 <strong>낮은 가격</strong>으로 양도<br>매수인에게 증여세 부과<br>매도인은 부당행위계산 부인으로 시가 기준 양도세</div>
+    </div>
+    <div class="mode-card high-card" id="mc-high" onclick="setMode('high')">
+      <div class="mode-icon">📈</div>
+      <div class="mode-title">고가 양도</div>
+      <div class="mode-desc">시가보다 <strong>높은 가격</strong>으로 양도<br>매도인에게 증여세 부과<br>매도인 양도세는 시가 기준으로 재계산</div>
+    </div>
+  </div>
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="slabel" style="color:var(--low2)">거래 금액 정보</div>
+
+    <div class="frow">
+      <span class="flabel">시가 (공정시장가액)<small>감정가액, 공시가격 등</small></span>
+      <div class="finput iw">
+        <input class="inp" id="v-market" type="text" placeholder="시장가치 입력" oninput="fmtI(this)"/>
+        <span class="iunit">원</span>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">실제 거래금액<small>계약서상 양도·취득가액</small></span>
+      <div class="finput iw">
+        <input class="inp" id="v-deal" type="text" placeholder="실제 거래금액 입력" oninput="fmtI(this)"/>
+        <span class="iunit">원</span>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">양도자 취득원가<small>매도인의 원래 취득가액</small></span>
+      <div class="finput iw">
+        <input class="inp" id="v-cost" type="text" placeholder="취득 당시 금액" oninput="fmtI(this)"/>
+        <span class="iunit">원</span>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">필요경비<small>취득세·중개수수료·자본적지출 등</small></span>
+      <div class="finput iw">
+        <input class="inp" id="v-expense" type="text" placeholder="없으면 0 또는 비워두세요" oninput="fmtI(this)"/>
+        <span class="iunit">원</span>
+      </div>
+    </div>
+
+    <div class="slabel" style="color:#a78bfa;margin-top:24px;">당사자 및 자산 정보</div>
+
+    <div class="frow">
+      <span class="flabel">특수관계 유형<small>상증법 시행령 §2의2 기준</small></span>
+      <div class="finput">
+        <select class="inp" id="v-rel">
+          <option value="family_direct">직계존비속 (부모·자녀·손자녀)</option>
+          <option value="family_spouse">배우자</option>
+          <option value="family_sibling">형제자매·4촌 이내 혈족</option>
+          <option value="corp_dominant">법인 — 지배주주·임원</option>
+          <option value="corp_related">법인 — 계열사·관계법인</option>
+          <option value="other">기타 특수관계인</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">자산 유형</span>
+      <div class="finput">
+        <select class="inp" id="v-asset">
+          <option value="land">토지</option>
+          <option value="building">건물 (일반)</option>
+          <option value="house1" >주택 — 1세대 1주택 (비과세 요건)</option>
+          <option value="house_adj">주택 — 조정대상지역 다주택</option>
+          <option value="house_other">주택 — 일반 다주택</option>
+          <option value="stock_listed">상장주식 (대주주)</option>
+          <option value="stock_unlisted">비상장주식</option>
+          <option value="other_asset">기타 자산</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">양도자 보유기간</span>
+      <div class="finput">
+        <select class="inp" id="v-hold">
+          <option value="lt1">1년 미만</option>
+          <option value="1to2">1년 이상 ~ 2년 미만</option>
+          <option value="gte2" selected>2년 이상</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">증여재산공제 적용<small>수증자 기준, 10년 합산</small></span>
+      <div class="finput">
+        <select class="inp" id="v-giftded">
+          <option value="auto">관계에 따라 자동 적용</option>
+          <option value="0">공제 없음 (이미 소진 또는 타인)</option>
+          <option value="600000000">배우자 6억원</option>
+          <option value="50000000">직계존비속 성년 5천만원</option>
+          <option value="20000000">직계존비속 미성년 2천만원</option>
+          <option value="10000000">기타 친족 1천만원</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="callout-box"></div>
+
+    <button class="calc-btn low" id="calc-btn" onclick="doCalc()">세금 계산하기</button>
+
+    <div id="result-area"></div>
+  </div>
+
+  <!-- 부당행위계산 부인 규정 설명 -->
+  <div class="law-section">
+    <button class="law-toggle-btn" onclick="toggleLaw(this)">
+      <span>📖 부당행위계산 부인 규정 상세 (소득세법 §101, 상증법 §35)</span>
+      <span id="law-icon">▼</span>
+    </button>
+    <div class="law-body" id="law-body">
+      <div class="law-inner">
+        <table>
+          <thead>
+            <tr><th>구분</th><th>법 조항</th><th>과세 요건</th><th>효과</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="hl">저가양도<br>증여의제</td>
+              <td class="hl">상증법 §35①<br>시행령 §26①</td>
+              <td>시가 − 대가 ≥ 시가×30%<br><strong>또는</strong> 시가 − 대가 ≥ 3억원</td>
+              <td>매수인(수증자)에게 증여세<br>과세표준 = 차액 − min(시가×30%, 3억)</td>
+            </tr>
+            <tr>
+              <td class="hl">고가양도<br>증여의제</td>
+              <td class="hl">상증법 §35②<br>시행령 §26②</td>
+              <td>대가 − 시가 ≥ 시가×30%<br><strong>또는</strong> 대가 − 시가 ≥ 3억원</td>
+              <td>매도인(양도자)에게 증여세<br>과세표준 = 초과액 − min(시가×30%, 3억)</td>
+            </tr>
+            <tr>
+              <td class="hl">저가양도<br>부당행위계산부인</td>
+              <td class="hl">소득세법 §101①<br>시행령 §167①</td>
+              <td>거래가액 ≤ 시가 × (1 − 5%)<br>즉 시가보다 5% 이상 낮게 거래</td>
+              <td>양도자의 양도가액을 시가로 재계산<br>→ 실제보다 높은 양도소득세 부담</td>
+            </tr>
+            <tr>
+              <td class="hl">고가양도<br>부당행위계산부인</td>
+              <td class="hl">소득세법 §101①<br>시행령 §167①</td>
+              <td>거래가액 ≥ 시가 × (1 + 5%)<br>즉 시가보다 5% 이상 높게 거래</td>
+              <td>양도자의 양도가액을 시가로 재계산<br>→ 실제보다 낮은 양도소득 인정</td>
+            </tr>
+            <tr>
+              <td class="hl">법인 관련<br>부당행위계산부인</td>
+              <td class="hl">법인세법 §52<br>시행령 §88</td>
+              <td>법인과 특수관계인 간 거래<br>시가 대비 5% 또는 3억원 기준</td>
+              <td>법인의 익금 산입 또는 손금 불산입<br>법인세 추가 부담</td>
+            </tr>
+            <tr>
+              <td class="hl">취득가액<br>이월과세</td>
+              <td class="hl">소득세법 §97의2<br>상증법 §35 후단</td>
+              <td>수증자가 증여받은 자산 재양도 시<br>(5년 이내)</td>
+              <td>증여자의 취득가액을 그대로 적용<br>절세 목적 우회 증여 방지</td>
+            </tr>
+            <tr>
+              <td class="hl">시가 인정<br>우선순위</td>
+              <td class="hl">상증법 §60~66</td>
+              <td colspan="2">① 매매사례가액 → ② 감정가액 → ③ 보충적 평가액(공시지가·기준시가) 순서로 적용</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ※ 본 계산기는 일반적인 참고용이며 실제 세액과 다를 수 있습니다. 세무 전문가 상담을 권장합니다.<br>
+    상속세및증여세법 제35조 · 소득세법 제101조 기준 | 지방소득세(세액×10%) 및 양도소득 기본공제(연 250만원) 별도
+  </footer>
+
+</div><!-- /main -->
+
+<script>
+'use strict';
+
+// ── 상태 ──
+let mode = 'low';
+
+// ── 세율표 ──
+const GIFT_TABLE = [
+  {lim:1e8,   r:.10, d:0},
+  {lim:5e8,   r:.20, d:1e7},
+  {lim:1e9,   r:.30, d:6e7},
+  {lim:3e9,   r:.40, d:1.6e8},
+  {lim:Infinity,r:.50,d:4.6e8},
+];
+const CGT_TABLE = [
+  {lim:14e6,    r:.06, d:0},
+  {lim:50e6,    r:.15, d:1.26e6},
+  {lim:88e6,    r:.24, d:5.76e6},
+  {lim:150e6,   r:.35, d:15.44e6},
+  {lim:300e6,   r:.38, d:19.94e6},
+  {lim:500e6,   r:.40, d:25.94e6},
+  {lim:1e9,     r:.42, d:35.94e6},
+  {lim:Infinity,r:.45, d:65.94e6},
+];
+
+// 증여재산공제 기본값 (관계별)
+const REL_GIFT_DED = {
+  family_direct: 50000000,
+  family_spouse: 600000000,
+  family_sibling:10000000,
+  corp_dominant: 0,
+  corp_related:  0,
+  other:         10000000,
+};
+
+function giftTax(base){
+  if(base<=0)return 0;
+  for(const b of GIFT_TABLE) if(base<=b.lim) return Math.max(0,Math.floor(base*b.r-b.d));
+  return 0;
+}
+
+// 양도소득세 (특별세율 우선)
+function cgtTax(gain, asset, hold){
+  if(gain<=0)return 0;
+  if(asset==='house1') return 0;  // 1세대1주택 비과세
+  // 보유기간별 단기세율
+  if(hold==='lt1'){
+    if(asset==='house_adj'||asset==='house_other') return Math.floor(gain*.70);
+    if(asset==='stock_unlisted') return Math.floor(gain*.50);
+    return Math.floor(gain*.50); // 토지·건물 등
+  }
+  if(hold==='1to2'){
+    if(asset==='house_adj') return Math.floor(gain*.60);
+    if(asset==='house_other') return Math.floor(gain*.40);
+    if(asset==='stock_unlisted') return Math.floor(gain*.40);
+    return Math.floor(gain*.40);
+  }
+  // 2년 이상
+  if(asset==='stock_unlisted') return Math.floor(gain*.20);
+  if(asset==='stock_listed')   return Math.floor(gain*.20);
+  // 다주택 중과 (2년↑)
+  if(asset==='house_adj')   return basicCGT(gain) + Math.floor(gain*.20); // +20%p 중과
+  if(asset==='house_other') return basicCGT(gain) + Math.floor(gain*.10); // +10%p 중과
+  return basicCGT(gain);
+}
+function basicCGT(gain){
+  for(const b of CGT_TABLE) if(gain<=b.lim) return Math.max(0,Math.floor(gain*b.r-b.d));
+  return 0;
+}
+
+// ── 유틸 ──
+function fmt(n){ return isNaN(n)?'0':Math.round(n).toLocaleString('ko-KR'); }
+function fmtI(el){
+  const raw=el.value.replace(/[^0-9]/g,'');
+  el.value=raw?parseInt(raw,10).toLocaleString('ko-KR'):'';
+}
+function pv(id){ return parseInt((document.getElementById(id).value||'').replace(/,/g,''),10)||0; }
+function pct(v,total){ return total?((v/total)*100).toFixed(2):'0.00'; }
+
+// ── 모드 전환 ──
+function setMode(m){
+  mode=m;
+  document.getElementById('mc-low').className ='mode-card low-card'+(m==='low'?' active':'');
+  document.getElementById('mc-high').className='mode-card high-card'+(m==='high'?' active':'');
+  const btn=document.getElementById('calc-btn');
+  btn.className='calc-btn '+m;
+  btn.textContent=m==='low'?'저가양도 세금 계산하기':'고가양도 세금 계산하기';
+  updateCallout();
+  document.getElementById('result-area').innerHTML='';
+}
+
+function updateCallout(){
+  const box=document.getElementById('callout-box');
+  if(mode==='low'){
+    box.innerHTML=`<div class="callout blue" style="margin-top:14px">
+      <strong>📌 저가양도 과세 구조</strong><br>
+      ① <strong>매수인(수증자) 증여세</strong> — 상증법 §35① : 차액이 시가×30% 이상 or 3억원 이상이면 과세<br>
+      ② <strong>매도인(양도자) 양도세 — 부당행위계산 부인</strong> — 소득세법 §101 : 시가보다 5% 이상 낮으면 양도가액을 시가로 재계산
+    </div>`;
+  } else {
+    box.innerHTML=`<div class="callout amber" style="margin-top:14px">
+      <strong>📌 고가양도 과세 구조</strong><br>
+      ① <strong>매도인(양도자) 증여세</strong> — 상증법 §35② : 초과액이 시가×30% 이상 or 3억원 이상이면 과세<br>
+      ② <strong>매도인(양도자) 양도세 — 부당행위계산 부인</strong> — 소득세법 §101 : 시가보다 5% 이상 높으면 양도가액을 시가로 재계산
+    </div>`;
+  }
+}
+updateCallout();
+
+// ── 메인 계산 ──
+function doCalc(){
+  const market  = pv('v-market');
+  const deal    = pv('v-deal');
+  const cost    = pv('v-cost');
+  const expense = pv('v-expense');
+  const rel     = document.getElementById('v-rel').value;
+  const asset   = document.getElementById('v-asset').value;
+  const hold    = document.getElementById('v-hold').value;
+  const giftdedSel = document.getElementById('v-giftded').value;
+  const el      = document.getElementById('result-area');
+
+  if(!market||!deal){
+    el.innerHTML=`<div class="err-box">⚠️ 시가와 실제 거래금액을 모두 입력해주세요.</div>`;return;
+  }
+  if(mode==='low' && deal>=market){
+    el.innerHTML=`<div class="err-box">⚠️ 실제 거래금액이 시가 이상입니다. 저가양도가 아닙니다. 고가양도 탭을 이용하세요.</div>`;return;
+  }
+  if(mode==='high' && deal<=market){
+    el.innerHTML=`<div class="err-box">⚠️ 실제 거래금액이 시가 이하입니다. 고가양도가 아닙니다. 저가양도 탭을 이용하세요.</div>`;return;
+  }
+
+  // 증여재산공제 결정
+  let giftDed;
+  if(giftdedSel==='auto') giftDed=REL_GIFT_DED[rel]||0;
+  else giftDed=parseInt(giftdedSel)||0;
+
+  if(mode==='low') renderLow(market,deal,cost,expense,rel,asset,hold,giftDed,el);
+  else             renderHigh(market,deal,cost,expense,rel,asset,hold,giftDed,el);
+}
+
+// ══════════════════════════
+//  저가양도
+// ══════════════════════════
+function renderLow(market,deal,cost,expense,rel,asset,hold,giftDed,el){
+  const diff    = market - deal;         // 시가 - 거래가
+  const thresh  = Math.min(market*0.3, 3e8);
+  const pct30   = diff/market;
+
+  // ① 증여세 (매수인)
+  const giftCond = diff >= market*0.3 || diff >= 3e8;
+  const giftBase = giftCond ? Math.max(0, diff - thresh) : 0;
+  const giftBaseAfterDed = Math.max(0, giftBase - giftDed);
+  const giftT   = giftTax(giftBaseAfterDed);
+
+  // ② 부당행위계산 부인 (매도인 양도세)
+  // 부인 요건: 거래가 ≤ 시가 × 95% (5% 기준)
+  const denialCond = deal <= market * 0.95;
+  // 실제 거래 기준 양도세
+  const gainActual = deal - cost - expense;
+  const cgtActual  = cgtTax(Math.max(0,gainActual), asset, hold);
+  // 부인 적용 시 (시가 기준)
+  const gainDenied = market - cost - expense;
+  const cgtDenied  = cgtTax(Math.max(0,gainDenied), asset, hold);
+  const extraCGT   = cgtDenied - cgtActual; // 추가 부담
+
+  // 취득세 영향 (매수인) — 저가 취득 시 시가 기준 취득세 주의
+  const acqTaxActual = Math.floor(deal * 0.04);
+  const acqTaxMarket = Math.floor(market * 0.04);
+
+  const buyerTotal  = giftT + acqTaxMarket; // 매수인 실질 부담
+  const sellerTotal = cgtDenied;
+
+  let h = `<div class="result-wrap">`;
+
+  // ── 과세요건 판단 ──
+  h += section('blue','🔍 과세 요건 판단');
+  h += block([
+    row('시가 (공정시장가액)',         fmt(market)+'원'),
+    row('실제 거래금액',               fmt(deal)+'원'),
+    divRow(),
+    row('시가 − 거래가액 (차액)',      `<span class="rv blue">${fmt(diff)}원</span>`),
+    row('차액 / 시가',                 `<span class="rv ${pct30>=0.3?'amber':'green'}">${(pct30*100).toFixed(2)}%</span>`),
+    row('30% 기준금액 (시가×30%)',      fmt(market*0.3)+'원'),
+    row('3억원 기준',                  '300,000,000원'),
+    divRow(),
+    row('증여세 과세요건 충족 여부',
+      giftCond
+        ? `<span class="rv amber">충족 <span class="badge warn">과세</span></span>`
+        : `<span class="rv green">미충족 <span class="badge pass">증여세 없음</span></span>`),
+    row('부당행위계산 부인 요건<br><small style="color:var(--text3)">거래가 ≤ 시가×95%</small>',
+      denialCond
+        ? `<span class="rv amber">충족 (${fmt(deal)} ≤ ${fmt(market*0.95)}) <span class="badge warn">부인 적용</span></span>`
+        : `<span class="rv green">미충족 <span class="badge pass">부인 없음</span></span>`),
+  ]);
+
+  // ── 매수인 증여세 ──
+  h += section('blue','🎁 매수인(수증자) 증여세 — 상증법 §35①');
+  if(giftCond){
+    h += block([
+      row('시가 − 거래가액',           fmt(diff)+'원'),
+      row('공제액 min(시가×30%, 3억)', `− ${fmt(thresh)}원`),
+      divRow(),
+      row('증여재산가액',              fmt(giftBase)+'원'),
+      row('증여재산공제 ('+relName(rel)+')',`− ${fmt(giftDed)}원`),
+      divRow(),
+      row('과세표준',                  fmt(giftBaseAfterDed)+'원'),
+      divRow(),
+      row(`<span class="rl2 bold">납부 증여세</span>`, `<span class="rv big blue">${fmt(giftT)}원</span>`, true),
+    ], `※ 증여세 신고기한: 증여받은 날이 속하는 달의 말일부터 3개월 이내<br>
+        ※ 증여재산공제는 10년간 동일인 합산 한도 기준입니다`);
+  } else {
+    h += `<div class="no-tax-box">✅ 증여세 과세 요건 미충족 — 증여세 없음<p>차액(${fmt(diff)}원)이 시가×30%(${fmt(market*0.3)}원)와 3억원 모두 미만입니다</p></div>`;
+  }
+
+  // ── 매도인 양도소득세 ──
+  h += section('green','💰 매도인(양도자) 양도소득세 — 소득세법 §101 부당행위계산 부인');
+
+  // 비교표
+  h += `<div class="r-block">`;
+  h += `<div class="rrow sub"><span class="rl2" style="font-weight:700;color:var(--text)">구분</span><span class="rv" style="color:var(--low2)">실제 거래 기준</span><span class="rv" style="color:var(--green)">부인 적용 (시가 기준)</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도가액</span><span class="rv">${fmt(deal)}원</span><span class="rv green">${fmt(market)}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">취득가액</span><span class="rv">− ${fmt(cost)}원</span><span class="rv">− ${fmt(cost)}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">필요경비</span><span class="rv">− ${fmt(expense)}원</span><span class="rv">− ${fmt(expense)}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도차익</span><span class="rv">${fmt(Math.max(0,gainActual))}원</span><span class="rv green">${fmt(Math.max(0,gainDenied))}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도소득세</span><span class="rv">${fmt(cgtActual)}원</span><span class="rv green">${fmt(cgtDenied)}원</span></div>`;
+  h += `<div class="rrow total"><span class="rl2 bold">과세당국 적용세액</span><span class="rv" style="color:var(--text3)">— </span><span class="rv big green">${fmt(cgtDenied)}원</span></div>`;
+  h += `<div class="r-note">
+    적용 세율: ${rateLabel(asset,hold)}<br>
+    부인 요건 ${denialCond?'충족 → 시가 기준 양도가액 적용':'미충족 → 실제 거래가액 적용'} | 추가 세부담: ${fmt(extraCGT)}원<br>
+    ※ 양도소득 기본공제 연 250만원 별도 | 지방소득세(세액×10%) 별도
+  </div>`;
+  h += `</div>`;
+
+  // ── 취득세 참고 ──
+  h += section('','📋 매수인 취득세 참고 (지방세법 §10)');
+  h += block([
+    row('실제 취득가액 기준 취득세(4%)',   fmt(acqTaxActual)+'원'),
+    row('시가 기준 취득세(4%)',            fmt(acqTaxMarket)+'원'),
+  ], '※ 저가취득 시 과세관청은 시가를 취득세 과표로 삼을 수 있습니다 (지방세법 §10①)');
+
+  // ── 종합 요약 ──
+  h += section('','📊 세부담 종합 요약');
+  h += `<div class="summary-box">
+    <div class="summary-grid">
+      <div class="s-item"><div class="s-item-label">매수인 증여세</div><div class="s-item-val" style="color:var(--low2)">${fmt(giftT)}원</div></div>
+      <div class="s-item"><div class="s-item-label">매도인 양도소득세 (부인 기준)</div><div class="s-item-val" style="color:var(--green)">${fmt(cgtDenied)}원</div></div>
+    </div>
+    <div class="s-total">
+      <span class="s-total-label">거래 관련 총 세부담</span>
+      <span class="s-total-val">${fmt(giftT+cgtDenied)}원</span>
+    </div>
+  </div>`;
+
+  h += `</div>`;
+  el.innerHTML = h;
+}
+
+// ══════════════════════════
+//  고가양도
+// ══════════════════════════
+function renderHigh(market,deal,cost,expense,rel,asset,hold,giftDed,el){
+  const diff    = deal - market;      // 거래가 − 시가
+  const thresh  = Math.min(market*0.3, 3e8);
+  const pct30   = diff/market;
+
+  // ① 증여세 (매도인)
+  const giftCond = diff >= market*0.3 || diff >= 3e8;
+  const giftBase = giftCond ? Math.max(0, diff - thresh) : 0;
+  const giftBaseAfterDed = Math.max(0, giftBase - giftDed);
+  const giftT   = giftTax(giftBaseAfterDed);
+
+  // ② 부당행위계산 부인: 거래가 ≥ 시가×105% → 양도가액을 시가로 낮춤
+  const denialCond = deal >= market * 1.05;
+  const gainActual = deal - cost - expense;
+  const cgtActual  = cgtTax(Math.max(0,gainActual), asset, hold);
+  const gainDenied = market - cost - expense;   // 시가로 낮춰 재계산
+  const cgtDenied  = cgtTax(Math.max(0,gainDenied), asset, hold);
+  const savedCGT   = cgtActual - cgtDenied;    // 부인으로 줄어드는 양도세
+
+  let h = `<div class="result-wrap">`;
+
+  // ── 과세요건 판단 ──
+  h += section('amber','🔍 과세 요건 판단');
+  h += block([
+    row('시가 (공정시장가액)',         fmt(market)+'원'),
+    row('실제 거래금액',               fmt(deal)+'원'),
+    divRow(),
+    row('거래가액 − 시가 (초과차액)', `<span class="rv amber">${fmt(diff)}원</span>`),
+    row('초과차액 / 시가',            `<span class="rv ${pct30>=0.3?'amber':'green'}">${(pct30*100).toFixed(2)}%</span>`),
+    row('30% 기준금액 (시가×30%)',     fmt(market*0.3)+'원'),
+    divRow(),
+    row('증여세 과세요건 충족 여부',
+      giftCond
+        ? `<span class="rv amber">충족 <span class="badge warn">과세</span></span>`
+        : `<span class="rv green">미충족 <span class="badge pass">증여세 없음</span></span>`),
+    row('부당행위계산 부인 요건<br><small style="color:var(--text3)">거래가 ≥ 시가×105%</small>',
+      denialCond
+        ? `<span class="rv amber">충족 (${fmt(deal)} ≥ ${fmt(market*1.05)}) <span class="badge warn">부인 적용</span></span>`
+        : `<span class="rv green">미충족 <span class="badge pass">부인 없음</span></span>`),
+  ]);
+
+  // ── 매도인 증여세 ──
+  h += section('amber','🎁 매도인(양도자) 증여세 — 상증법 §35②');
+  if(giftCond){
+    h += block([
+      row('거래가액 − 시가',            fmt(diff)+'원'),
+      row('공제액 min(시가×30%, 3억)',  `− ${fmt(thresh)}원`),
+      divRow(),
+      row('증여재산가액',               fmt(giftBase)+'원'),
+      row('증여재산공제 ('+relName(rel)+')', `− ${fmt(giftDed)}원`),
+      divRow(),
+      row('과세표준',                   fmt(giftBaseAfterDed)+'원'),
+      divRow(),
+      row(`<span class="rl2 bold">납부 증여세</span>`, `<span class="rv big amber">${fmt(giftT)}원</span>`, true),
+    ], `※ 고가양도 시 매수인이 시가 초과금액을 지급 → 매도인이 그 이익을 증여받은 것으로 의제<br>
+        ※ 증여재산공제는 수증자(매도인) 기준 10년 합산 한도`);
+  } else {
+    h += `<div class="no-tax-box" style="border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.06);color:var(--high2)">✅ 증여세 과세 요건 미충족 — 증여세 없음<p style="color:#fcd34d">초과차액(${fmt(diff)}원)이 시가×30%(${fmt(market*0.3)}원)와 3억원 모두 미만입니다</p></div>`;
+  }
+
+  // ── 매도인 양도소득세 ──
+  h += section('green','💰 매도인(양도자) 양도소득세 — 소득세법 §101 부당행위계산 부인');
+  h += `<div class="r-block">`;
+  h += `<div class="rrow sub"><span class="rl2" style="font-weight:700;color:var(--text)">구분</span><span class="rv" style="color:var(--high2)">실제 거래 기준</span><span class="rv" style="color:var(--green)">부인 적용 (시가 기준)</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도가액</span><span class="rv">${fmt(deal)}원</span><span class="rv green">${fmt(market)}원 (시가로 낮춤)</span></div>`;
+  h += `<div class="rrow"><span class="rl2">취득가액</span><span class="rv">− ${fmt(cost)}원</span><span class="rv">− ${fmt(cost)}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">필요경비</span><span class="rv">− ${fmt(expense)}원</span><span class="rv">− ${fmt(expense)}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도차익</span><span class="rv">${fmt(Math.max(0,gainActual))}원</span><span class="rv green">${fmt(Math.max(0,gainDenied))}원</span></div>`;
+  h += `<div class="rrow"><span class="rl2">양도소득세</span><span class="rv">${fmt(cgtActual)}원</span><span class="rv green">${fmt(cgtDenied)}원</span></div>`;
+  h += `<div class="rrow total"><span class="rl2 bold">과세당국 적용세액</span><span class="rv" style="color:var(--text3)">—</span><span class="rv big green">${fmt(cgtDenied)}원</span></div>`;
+  h += `<div class="r-note">
+    적용 세율: ${rateLabel(asset,hold)}<br>
+    부인 요건 ${denialCond?'충족 → 시가 기준 양도가액 적용 (초과분 양도차익 제외)':'미충족 → 실제 거래가액 적용'}<br>
+    ${denialCond?`절감 양도소득세: ${fmt(savedCGT)}원 (단, 초과분은 증여세로 별도 과세)`:''}
+    ※ 고가양도 수익(${fmt(diff)}원)은 증여세 과세 대상이므로 양도소득세에서 제외됩니다<br>
+    ※ 양도소득 기본공제 연 250만원 별도 | 지방소득세(세액×10%) 별도
+  </div>`;
+  h += `</div>`;
+
+  // ── 매수인 취득세 참고 ──
+  h += section('','📋 매수인 취득세 참고');
+  h += block([
+    row('실제 취득가액 기준 취득세(4%)', fmt(Math.floor(deal*0.04))+'원'),
+    row('시가 기준 취득세(4%)',          fmt(Math.floor(market*0.04))+'원'),
+  ], '※ 고가취득의 경우 취득세 과표는 실제 취득가액(계약금액) 적용');
+
+  // ── 이중과세 방지 ──
+  h += section('','⚖️ 이중과세 조정');
+  h += block([
+    row('증여세 과세 대상 초과차액',          fmt(diff)+'원'),
+    row('동 금액에 대한 양도소득세 제외 여부', '제외 (부인 적용 시 시가 기준 계산)'),
+    row('매도인 최종 세부담 합계',           `<span class="rv amber">${fmt(giftT)}원</span> + <span class="rv green">${fmt(cgtDenied)}원</span> = <strong>${fmt(giftT+cgtDenied)}원</strong>`),
+  ], '※ 소득세법 §101에 따라 부당행위계산 부인 적용 시 양도가액을 시가로 재산정하므로<br>초과 거래금액 부분은 양도소득세 과세표준에서 제외되어 이중과세가 방지됩니다');
+
+  // ── 종합 요약 ──
+  h += section('','📊 세부담 종합 요약 (매도인 기준)');
+  h += `<div class="summary-box">
+    <div class="summary-grid">
+      <div class="s-item"><div class="s-item-label">증여세 (초과이익)</div><div class="s-item-val" style="color:var(--high2)">${fmt(giftT)}원</div></div>
+      <div class="s-item"><div class="s-item-label">양도소득세 (시가 기준)</div><div class="s-item-val" style="color:var(--green)">${fmt(cgtDenied)}원</div></div>
+    </div>
+    <div class="s-total">
+      <span class="s-total-label">매도인 합산 세부담</span>
+      <span class="s-total-val">${fmt(giftT+cgtDenied)}원</span>
+    </div>
+  </div>`;
+
+  h += `</div>`;
+  el.innerHTML = h;
+}
+
+// ── 헬퍼 ──
+function section(color, title){
+  const colorMap={blue:'var(--low2)',amber:'var(--high2)',green:'var(--green)','':"var(--text2)"};
+  return `<div class="r-section" style="margin-top:24px"><div class="r-title" style="color:${colorMap[color]||'var(--text2)'}">${title}</div>`;
+}
+function block(rows, note){
+  let h=`<div class="r-block">`;
+  rows.forEach(r=>{ h+=r; });
+  if(note) h+=`<div class="r-note">${note}</div>`;
+  h+=`</div></div>`;
+  return h;
+}
+function row(label, val, isFull){
+  if(isFull) return `<div class="rrow total"><span class="rl2">${label}</span>${val}</div>`;
+  return `<div class="rrow"><span class="rl2">${label}</span><span class="rv">${val}</span></div>`;
+}
+function divRow(){ return `<div class="divrow"></div>`; }
+
+function relName(rel){
+  const m={family_direct:'직계존비속',family_spouse:'배우자',family_sibling:'형제자매',corp_dominant:'법인(지배주주)',corp_related:'법인(계열사)',other:'기타 특수관계인'};
+  return m[rel]||'특수관계인';
+}
+function rateLabel(asset,hold){
+  if(asset==='house1')       return '1세대1주택 비과세';
+  if(hold==='lt1'){
+    if(asset==='house_adj'||asset==='house_other') return '단기(1년미만)+중과 70%';
+    return '단기(1년미만) 50%';
+  }
+  if(hold==='1to2'){
+    if(asset==='house_adj')   return '단기(1~2년)+중과 60%';
+    return '단기(1~2년) 40%';
+  }
+  if(asset==='stock_unlisted') return '비상장주식 20%';
+  if(asset==='stock_listed')   return '상장주식(대주주) 20%';
+  if(asset==='house_adj')      return '기본세율 + 중과 20%p';
+  if(asset==='house_other')    return '기본세율 + 중과 10%p';
+  return '기본세율 6~45%';
+}
+
+function toggleLaw(btn){
+  const body=document.getElementById('law-body');
+  const icon=document.getElementById('law-icon');
+  body.classList.toggle('open');
+  icon.textContent=body.classList.contains('open')?'▲':'▼';
+}
+</script>
+</body>
+</html>
