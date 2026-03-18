@@ -2,7 +2,7 @@
   "name": "기장의무 경비율 판단기",
   "short_name": "기장판단기",
   "description": "개인사업자 기장의무(복식부기/간편장부) 및 경비율(기준/단순) 자동 판단 프로그램",
-  "start_url": "./index.html",
+  "start_url": "./obligation.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
