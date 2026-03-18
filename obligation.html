@@ -905,5 +905,11 @@ function resetAll(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/tax-calculator/sw.js');
+  }
+</script>
 </body>
 </html>
