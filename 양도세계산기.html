@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>양도소득세 계산기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f0f2f5;
+    display: flex; justify-content: center;
+    align-items: flex-start; min-height: 100vh; padding: 32px 16px;
+  }
+  .container { width: 100%; max-width: 580px; }
+  h1 {
+    text-align: center; font-size: 20px; font-weight: 700;
+    color: #1a1a2e; margin-bottom: 20px; letter-spacing: -0.5px;
+  }
+  table {
+    width: 100%; border-collapse: collapse; background: #fff;
+    border: 2px solid #2c3e50; font-size: 13.5px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  td {
+    border: 1px solid #b0b8c1; padding: 5px 10px;
+    vertical-align: middle; height: 34px;
+  }
+  /* 날짜 섹션 */
+  .hd-date { background:#e8f5e9; font-weight:700; color:#2e7d32; text-align:center; width:88px; border-right:2px solid #2e7d32; }
+  .lb-date { background:#f1f8f2; color:#2e7d32; padding-left:16px; }
+  .in-date  { background:#f9fef9; }
+  .lb-period { background:#c8e6c9; font-weight:700; color:#1b5e20; text-align:right; padding-right:10px; }
+  .vl-period { background:#c8e6c9; font-weight:700; color:#1b5e20; text-align:right; }
+  /* 일반 그룹 */
+  .hd-group { background:#eaf0fb; font-weight:700; color:#2c3e50; text-align:center; width:88px; border-right:2px solid #2c3e50; }
+  .lb-item  { background:#f7f9fc; color:#333; padding-left:16px; }
+  .in-num   { background:#fffef5; }
+  .lb-sub   { background:#dce8f8; font-weight:700; color:#1a3a5c; text-align:right; padding-right:10px; }
+  .vl-sub   { background:#dce8f8; font-weight:700; color:#1a3a5c; text-align:right; }
+  /* 결과 행 */
+  .lb-res   { background:#f7f9fc; font-weight:500; color:#333; text-align:right; padding-right:10px; }
+  .vl-res   { text-align:right; font-weight:500; color:#222; }
+  /* 세율 */
+  .lb-rate  { background:#f7f9fc; font-weight:500; color:#333; text-align:right; padding-right:10px; }
+  .in-rate  { background:#fffef5; }
+  /* 강조 */
+  .lb-hi    { background:#2c3e50; color:#fff; font-weight:700; text-align:right; padding-right:10px; }
+  .vl-hi    { background:#2c3e50; color:#ff6b6b; font-weight:700; text-align:right; }
+  /* 최종합계 */
+  .lb-final { background:#1a252f; color:#fff; font-weight:700; font-size:14px; text-align:center; }
+  .vl-final { background:#1a252f; color:#ff6b6b; font-weight:700; font-size:14px; text-align:right; }
+  /* 구분선 */
+  .divider td { background:#dde3ea; height:6px; border:none; padding:0; }
+  /* 입력 공통 */
+  input[type="number"] {
+    width:100%; border:none; background:transparent;
+    text-align:right; font-family:'Noto Sans KR',sans-serif;
+    font-size:13.5px; color:#1a3a5c; outline:none; padding:0 2px;
+  }
+  input[type="date"] {
+    width:100%; border:none; background:transparent;
+    font-family:'Noto Sans KR',sans-serif; font-size:13.5px;
+    color:#2e7d32; outline:none; padding:0 2px; cursor:pointer;
+  }
+  select {
+    width:100%; border:none; background:transparent;
+    font-family:'Noto Sans KR',sans-serif; font-size:13.5px;
+    color:#1a3a5c; outline:none; cursor:pointer; text-align:right;
+  }
+  input:focus, select:focus { background:#fff9e0; }
+  .negative { color:#c0392b !important; }
+  .zero     { color:#aaa; }
+  .btn-wrap { margin-top:12px; text-align:center; }
+  button {
+    background:#2c3e50; color:#fff; border:none;
+    padding:10px 36px; font-size:14px;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700;
+    border-radius:4px; cursor:pointer; transition:background .2s; margin:4px;
+  }
+  button:hover { background:#1a252f; }
+  button.reset { background:#7f8c8d; }
+  button.reset:hover { background:#555; }
+  .note { font-size:11px; color:#999; text-align:center; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>&#127968; 양도소득세 계산기</h1>
+  <table>
+
+    <!-- 보유기간 섹션 -->
+    <tr>
+      <td class="hd-date" rowspan="5">보유<br>기간</td>
+      <td class="lb-date">취득일자</td>
+      <td class="in-date"><input type="date" id="i_취득일자" onchange="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-date">양도일자</td>
+      <td class="in-date"><input type="date" id="i_양도일자" onchange="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-period">보유기간</td>
+      <td class="vl-period" id="o_보유기간">-</td>
+    </tr>
+    <tr>
+      <td class="lb-period">장기보유공제율</td>
+      <td class="vl-period" id="o_공제율">-</td>
+    </tr>
+    <tr>
+      <td class="lb-period">장기보유특별공제액</td>
+      <td class="vl-period" id="o_장기공제액">-</td>
+    </tr>
+
+    <tr class="divider"><td colspan="3"></td></tr>
+
+    <!-- 양도가액 -->
+    <tr>
+      <td class="hd-group" colspan="2" style="text-align:center; border-right:1px solid #b0b8c1;">양도가액</td>
+      <td class="in-num"><input type="number" id="i_양도가액" placeholder="0" oninput="calc()"></td>
+    </tr>
+
+    <tr class="divider"><td colspan="3"></td></tr>
+
+    <!-- 취득가액 -->
+    <tr>
+      <td class="hd-group" rowspan="7">취득<br>가액</td>
+      <td class="lb-item">매입가액</td>
+      <td class="in-num"><input type="number" id="i_매입가액" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">취득세</td>
+      <td class="in-num"><input type="number" id="i_취득세" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">등록세</td>
+      <td class="in-num"><input type="number" id="i_등록세" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">법무사</td>
+      <td class="in-num"><input type="number" id="i_법무사" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">중개수수료</td>
+      <td class="in-num"><input type="number" id="i_중개수수료1" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">감가상각비</td>
+      <td class="in-num"><input type="number" id="i_감가상각비" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-sub">취득가액 합계</td>
+      <td class="vl-sub" id="o_취득합계">0</td>
+    </tr>
+
+    <tr class="divider"><td colspan="3"></td></tr>
+
+    <!-- 필요경비 -->
+    <tr>
+      <td class="hd-group" rowspan="4">필요<br>경비</td>
+      <td class="lb-item">자본적지출</td>
+      <td class="in-num"><input type="number" id="i_자본적지출" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">중개수수료</td>
+      <td class="in-num"><input type="number" id="i_중개수수료2" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-item">양도세 수수료</td>
+      <td class="in-num"><input type="number" id="i_양도세수수료" placeholder="0" oninput="calc()"></td>
+    </tr>
+    <tr>
+      <td class="lb-sub">필요경비 합계</td>
+      <td class="vl-sub" id="o_필요합계">0</td>
+    </tr>
+
+    <tr class="divider"><td colspan="3"></td></tr>
+
+    <!-- 계산 결과 -->
+    <tr>
+      <td class="lb-res" colspan="2">양도차익</td>
+      <td class="vl-res" id="o_양도차익">0</td>
+    </tr>
+    <tr>
+      <td class="lb-res" colspan="2">장기보유공제 (－)</td>
+      <td class="vl-res" id="o_장기공제표시">0</td>
+    </tr>
+    <tr>
+      <td class="lb-res" colspan="2">양도소득금액</td>
+      <td class="vl-res" id="o_양도소득금액">0</td>
+    </tr>
+    <tr>
+      <td class="lb-res" colspan="2">기본공제 (－)</td>
+      <td class="vl-res" id="o_기본공제">2,500,000</td>
+    </tr>
+    <tr>
+      <td class="lb-res" colspan="2">과세표준</td>
+      <td class="vl-res" id="o_과세표준">0</td>
+    </tr>
+    <tr>
+      <td class="lb-rate" colspan="2">세율</td>
+      <td class="in-rate">
+        <select id="i_세율" onchange="calc()">
+          <option value="auto" selected>자동 (누진세율)</option>
+          <option value="0.06">6%</option>
+          <option value="0.15">15%</option>
+          <option value="0.24">24%</option>
+          <option value="0.35">35%</option>
+          <option value="0.38">38%</option>
+          <option value="0.40">40%</option>
+          <option value="0.42">42%</option>
+          <option value="0.45">45%</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td class="lb-hi" colspan="2">산출세액</td>
+      <td class="vl-hi" id="o_산출세액">0</td>
+    </tr>
+    <tr>
+      <td class="lb-hi" colspan="2">지방소득세 (10%)</td>
+      <td class="vl-hi" id="o_지방소득세">0</td>
+    </tr>
+
+    <tr class="divider"><td colspan="3"></td></tr>
+
+    <tr>
+      <td class="lb-final" colspan="2">합계</td>
+      <td class="vl-final" id="o_합계">0</td>
+    </tr>
+
+  </table>
+  <div class="btn-wrap">
+    <button onclick="calc()">계산하기</button>
+    <button class="reset" onclick="resetAll()">초기화</button>
+  </div>
+  <p class="note">※ 일반 부동산 기준 | 1세대 1주택 비과세·중과세 요건은 별도 확인 필요 | 본 계산기는 참고용입니다.</p>
+</div>
+
+<script>
+var TAX_BRACKETS = [
+  { max: 14000000,   rate: 0.06, deduct: 0 },
+  { max: 50000000,   rate: 0.15, deduct: 1260000 },
+  { max: 88000000,   rate: 0.24, deduct: 5760000 },
+  { max: 150000000,  rate: 0.35, deduct: 15440000 },
+  { max: 300000000,  rate: 0.38, deduct: 19940000 },
+  { max: 500000000,  rate: 0.40, deduct: 25940000 },
+  { max: 1000000000, rate: 0.42, deduct: 35940000 },
+  { max: Infinity,   rate: 0.45, deduct: 65940000 }
+];
+
+// 장기보유특별공제율: 보유연수 x 2%, 3년 이상 적용, 최대 30%
+function getLtcgRate(years) {
+  if (years < 3) return 0;
+  return Math.min(years * 0.02, 0.30);
+}
+
+// 날짜 문자열 YYYY-MM-DD -> 로컬 Date 객체
+function parseDate(str) {
+  var p = str.split('-');
+  return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+}
+
+// 보유기간 계산 -> { years, months } or null
+function getHolding(acqStr, disStr) {
+  if (!acqStr || !disStr) return null;
+  var acq = parseDate(acqStr);
+  var dis = parseDate(disStr);
+  if (dis <= acq) return { years: 0, months: 0 };
+  var y = dis.getFullYear() - acq.getFullYear();
+  var m = dis.getMonth() - acq.getMonth();
+  if (dis.getDate() < acq.getDate()) m--;
+  if (m < 0) { y--; m += 12; }
+  if (y < 0) y = 0;
+  return { years: y, months: m };
+}
+
+function numFmt(n) {
+  if (n === 0) return '0';
+  var abs = Math.abs(Math.round(n));
+  var s = abs.toLocaleString('ko-KR');
+  return n < 0 ? '(' + s + ')' : s;
+}
+
+function gv(id) {
+  var el = document.getElementById(id);
+  if (!el) return 0;
+  return parseFloat(el.value) || 0;
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = numFmt(val);
+  el.className = el.className.replace(/\s*(negative|zero)/g, '');
+  if (val < 0) el.className += ' negative';
+  else if (val === 0) el.className += ' zero';
+}
+
+function calc() {
+  // 1. 보유기간
+  var acqStr = document.getElementById('i_취득일자').value;
+  var disStr = document.getElementById('i_양도일자').value;
+  var holding = getHolding(acqStr, disStr);
+  var holdYears = 0;
+  var holdMonths = 0;
+  var ltcgRate = 0;
+
+  if (holding === null) {
+    document.getElementById('o_보유기간').textContent = '-';
+    document.getElementById('o_공제율').textContent = '-';
+    document.getElementById('o_장기공제액').textContent = '-';
+  } else {
+    holdYears  = holding.years;
+    holdMonths = holding.months;
+    ltcgRate   = getLtcgRate(holdYears);
+
+    var periodStr = holdYears + '년' + (holdMonths > 0 ? ' ' + holdMonths + '개월' : '');
+    document.getElementById('o_보유기간').textContent = periodStr;
+
+    if (holdYears < 3) {
+      document.getElementById('o_공제율').textContent = '0% (3년 미만)';
+    } else {
+      document.getElementById('o_공제율').textContent = holdYears + '년 x 2% = ' + (ltcgRate * 100).toFixed(0) + '%';
+    }
+  }
+
+  // 2. 취득가액 합계
+  var acqTotal = gv('i_매입가액') + gv('i_취득세') + gv('i_등록세')
+               + gv('i_법무사') + gv('i_중개수수료1') + gv('i_감가상각비');
+
+  // 3. 필요경비 합계
+  var expTotal = gv('i_자본적지출') + gv('i_중개수수료2') + gv('i_양도세수수료');
+
+  // 4. 양도차익
+  var saleAmt = gv('i_양도가액');
+  var gain = saleAmt - acqTotal - expTotal;
+
+  // 5. 장기보유특별공제액
+  var ltcgAmt = 0;
+  if (gain > 0 && holding !== null) {
+    ltcgAmt = Math.round(gain * ltcgRate);
+  }
+  if (holding !== null) {
+    document.getElementById('o_장기공제액').textContent = numFmt(ltcgAmt);
+  }
+  document.getElementById('o_장기공제표시').textContent = numFmt(ltcgAmt);
+
+  // 6. 양도소득금액
+  var incomeAmt = gain - ltcgAmt;
+
+  // 7. 과세표준
+  var baseDed = 2500000;
+  var taxBase = incomeAmt - baseDed;
+
+  // 8. 산출세액
+  var tax = 0;
+  var rateOpt = document.getElementById('i_세율').value;
+  if (taxBase > 0) {
+    if (rateOpt === 'auto') {
+      for (var i = 0; i < TAX_BRACKETS.length; i++) {
+        if (taxBase <= TAX_BRACKETS[i].max) {
+          tax = taxBase * TAX_BRACKETS[i].rate - TAX_BRACKETS[i].deduct;
+          break;
+        }
+      }
+    } else {
+      tax = taxBase * parseFloat(rateOpt);
+    }
+  }
+
+  // 9. 지방소득세
+  var localTax = tax * 0.1;
+  var total = -(tax + localTax);
+
+  // 10. 화면 갱신
+  setText('o_취득합계',    acqTotal);
+  setText('o_필요합계',    expTotal);
+  setText('o_양도차익',    gain);
+  setText('o_양도소득금액', incomeAmt);
+  document.getElementById('o_기본공제').textContent = numFmt(baseDed);
+  setText('o_과세표준',    taxBase);
+  setText('o_산출세액',    -tax);
+  setText('o_지방소득세',  -localTax);
+  setText('o_합계',        total);
+}
+
+function resetAll() {
+  var inputs = document.querySelectorAll('input');
+  for (var i = 0; i < inputs.length; i++) inputs[i].value = '';
+  document.getElementById('i_세율').value = 'auto';
+
+  var resetIds = ['o_취득합계','o_필요합계','o_양도차익','o_장기공제표시',
+                  'o_양도소득금액','o_과세표준','o_산출세액','o_지방소득세','o_합계'];
+  for (var j = 0; j < resetIds.length; j++) {
+    var el = document.getElementById(resetIds[j]);
+    el.textContent = '0';
+    el.className = el.className.replace(/\s*(negative|zero)/g, '');
+  }
+  document.getElementById('o_기본공제').textContent = '2,500,000';
+  document.getElementById('o_보유기간').textContent = '-';
+  document.getElementById('o_공제율').textContent   = '-';
+  document.getElementById('o_장기공제액').textContent = '-';
+  document.getElementById('o_장기공제표시').textContent = '0';
+}
+</script>
+</body>
+</html>
