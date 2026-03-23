@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>종합부동산세 계산기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+      font-family: 'Noto Sans KR', sans-serif;
+      padding: 2rem 1rem 4rem;
+      color: #e8f4f8;
+    }
+
+    .card {
+      max-width: 680px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 2rem 2rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(135deg, rgba(0,180,219,0.15), rgba(0,131,176,0.1));
+    }
+
+    .card-header h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .card-header p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+    }
+
+    .card-body { padding: 1.8rem 2rem; }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(100,200,255,0.7);
+      margin-bottom: 10px;
+      margin-top: 22px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .radio-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .radio-btn {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      font-family: 'Noto Sans KR', sans-serif;
+      line-height: 1.5;
+    }
+
+    .radio-btn.active {
+      border-color: #00b4db;
+      background: rgba(0,180,219,0.18);
+      color: #00d4ff;
+      font-weight: 700;
+    }
+
+    .radio-btn small {
+      display: block;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      font-weight: 400;
+    }
+
+    .house-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .house-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 11px 48px 11px 14px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrap input:focus {
+      border-color: rgba(0,180,219,0.5);
+    }
+
+    .input-wrap input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      pointer-events: none;
+    }
+
+    .remove-btn {
+      padding: 9px 13px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,80,80,0.4);
+      background: rgba(255,80,80,0.1);
+      color: #ff8080;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .remove-btn:hover { background: rgba(255,80,80,0.2); }
+
+    .add-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1.5px dashed rgba(255,255,255,0.2);
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .add-btn:hover {
+      border-color: rgba(0,180,219,0.4);
+      color: rgba(0,212,255,0.7);
+    }
+
+    .calc-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 24px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #00b4db, #0083b0);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.05rem;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      box-shadow: 0 4px 20px rgba(0,180,219,0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .calc-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(0,180,219,0.45);
+    }
+
+    .calc-btn:active { transform: translateY(0); }
+
+    /* Result */
+    .result-card {
+      margin-top: 28px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,180,219,0.3);
+      overflow: hidden;
+      background: rgba(0,180,219,0.06);
+      animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      padding: 13px 20px;
+      background: rgba(0,180,219,0.12);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #00d4ff;
+      text-transform: uppercase;
+    }
+
+    .result-rows { padding: 6px 0; }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 20px;
+      font-size: 0.875rem;
+    }
+
+    .result-label { color: rgba(255,255,255,0.6); }
+    .result-value { font-weight: 600; color: #e8f4f8; }
+
+    .result-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.07);
+      margin: 3px 0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .badge-normal {
+      background: rgba(0,220,130,0.15);
+      color: #00dc82;
+    }
+
+    .badge-heavy {
+      background: rgba(255,100,100,0.15);
+      color: #ff8080;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: rgba(0,180,219,0.1);
+      border-top: 1px solid rgba(0,180,219,0.25);
+    }
+
+    .total-label {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #00d4ff;
+    }
+
+    .total-value {
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #fff;
+    }
+
+    .msg-box {
+      padding: 16px 20px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .notice {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(255,200,0,0.07);
+      border: 1px solid rgba(255,200,0,0.15);
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.7;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 480px) {
+      .card-body { padding: 1.4rem 1.2rem; }
+      .card-header { padding: 1.4rem 1.2rem 1.2rem; }
+      .card-header h1 { font-size: 1.35rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <h1>🏠 종합부동산세 계산기</h1>
+    <p>2023년 개정 기준 · 주택분 종합부동산세</p>
+  </div>
+
+  <div class="card-body">
+
+    <!-- 보유 유형 -->
+    <div class="section-label">보유 유형</div>
+    <div class="radio-group">
+      <button class="radio-btn active" id="btn-one" onclick="setHouseType('1')">
+        1세대 1주택자
+        <small>공제 12억원</small>
+      </button>
+      <button class="radio-btn" id="btn-multi" onclick="setHouseType('0')">
+        일반 / 다주택자
+        <small>공제 9억원</small>
+      </button>
+    </div>
+
+    <!-- 주택 공시가격 -->
+    <div class="section-label">주택별 공시가격 입력</div>
+    <div class="house-list" id="house-list"></div>
+    <button class="add-btn" onclick="addHouse()">+ 주택 추가</button>
+
+    <!-- 직전연도 세액 -->
+    <div class="section-label">
+      직전연도 재산세＋종합부동산세 합계
+      <span style="opacity:0.5;font-weight:400;">(선택)</span>
+    </div>
+    <div class="input-wrap">
+      <input type="number" id="prev-year-tax" placeholder="세부담상한 계산용 (입력 시 150% 한도 적용)" min="0" />
+      <span class="input-suffix">원</span>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">계산하기</button>
+
+    <!-- 결과 영역 -->
+    <div id="result-area"></div>
+
+    <div class="notice">
+      ⚠️ 본 계산기는 참고용이며, 세액공제(고령자·장기보유) 및 개별 감면은 반영되지 않습니다.
+      정확한 세액은 국세청 홈택스의 종합부동산세 간이세액계산 서비스를 이용하세요.
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── 세율 테이블 ──────────────────────────────────────────
+  const TAX_BRACKETS = [
+    { max: 300000000,    baseRate: 0.005, baseDeduction: 0,          heavyRate: 0.005, heavyDeduction: 0          },
+    { max: 600000000,    baseRate: 0.007, baseDeduction: 600000,     heavyRate: 0.007, heavyDeduction: 600000     },
+    { max: 1200000000,   baseRate: 0.010, baseDeduction: 2400000,    heavyRate: 0.010, heavyDeduction: 2400000    },
+    { max: 2500000000,   baseRate: 0.013, baseDeduction: 6000000,    heavyRate: 0.020, heavyDeduction: 14400000   },
+    { max: 5000000000,   baseRate: 0.015, baseDeduction: 11000000,   heavyRate: 0.030, heavyDeduction: 39400000   },
+    { max: 9400000000,   baseRate: 0.020, baseDeduction: 36000000,   heavyRate: 0.040, heavyDeduction: 89400000   },
+    { max: Infinity,     baseRate: 0.027, baseDeduction: 101800000,  heavyRate: 0.050, heavyDeduction: 183400000  },
+  ];
+
+  // ── 상태 ─────────────────────────────────────────────────
+  let houseType = '1';
+  let houseId = 1;
+  let houses = [{ id: houseId++ }];
+
+  // ── 유틸 ─────────────────────────────────────────────────
+  function fmt(n) {
+    if (n === null || n === undefined) return '-';
+    return Math.round(n).toLocaleString('ko-KR') + '원';
+  }
+
+  function calcPropertyTax(price) {
+    const base = price * 0.6;
+    if (price <= 600000000)   return base * 0.001;
+    if (price <= 1500000000)  return base * 0.002 - 600000;
+    return base * 0.004 - 3600000;
+  }
+
+  // ── 보유 유형 선택 ────────────────────────────────────────
+  function setHouseType(v) {
+    houseType = v;
+    document.getElementById('btn-one').classList.toggle('active', v === '1');
+    document.getElementById('btn-multi').classList.toggle('active', v === '0');
+  }
+
+  // ── 주택 목록 렌더링 ──────────────────────────────────────
+  function renderHouses() {
+    const list = document.getElementById('house-list');
+    list.innerHTML = '';
+    houses.forEach((h, i) => {
+      const row = document.createElement('div');
+      row.className = 'house-row';
+      row.innerHTML = `
+        <div class="input-wrap">
+          <input type="number" id="house-${h.id}" min="0"
+            placeholder="주택 ${i + 1} 공시가격 (예: 800000000)"
+            value="${h.value || ''}" oninput="updateHouseValue(${h.id}, this.value)" />
+          <span class="input-suffix">원</span>
+        </div>
+        ${houses.length > 1
+          ? `<button class="remove-btn" onclick="removeHouse(${h.id})">✕</button>`
+          : ''}
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function addHouse() {
+    houses.push({ id: houseId++ });
+    renderHouses();
+  }
+
+  function removeHouse(id) {
+    houses = houses.filter(h => h.id !== id);
+    renderHouses();
+  }
+
+  function updateHouseValue(id, val) {
+    const h = houses.find(h => h.id === id);
+    if (h) h.value = val;
+  }
+
+  // ── 계산 ─────────────────────────────────────────────────
+  function calculate() {
+    // 입력값 수집
+    houses.forEach(h => {
+      const el = document.getElementById('house-' + h.id);
+      h.value = el ? el.value : h.value || '';
+    });
+
+    const prices = houses.map(h => parseFloat(h.value) || 0);
+    const total = prices.reduce((a, b) => a + b, 0);
+    const count = houses.length;
+    const isOne = houseType === '1';
+    const deduction = isOne ? 1200000000 : 900000000;
+    const RATIO = 0.60;
+
+    const excessAmount = Math.max(0, total - deduction);
+    const taxBase = excessAmount * RATIO;
+
+    const area = document.getElementById('result-area');
+
+    if (taxBase <= 0) {
+      area.innerHTML = `
+        <div class="result-card">
+          <div class="result-header">계산 결과</div>
+          <div class="msg-box">
+            과세표준이 0 이하로 <strong style="color:#00dc82;">종합부동산세 납부 대상이 아닙니다.</strong><br>
+            주택공시가격 합계: ${fmt(total)} / 공제금액: ${fmt(deduction)}
+          </div>
+        </div>`;
+      return;
+    }
+
+    // 세율 결정
+    const isHeavy = count >= 3 && taxBase > 1200000000;
+    const bracket = TAX_BRACKETS.find(b => taxBase <= b.max);
+    const rate = isHeavy ? bracket.heavyRate : bracket.baseRate;
+    const progDeduction = isHeavy ? bracket.heavyDeduction : bracket.baseDeduction;
+
+    // 종합부동산세액
+    const crtTax = taxBase * rate - progDeduction;
+
+    // 공제할 재산세액
+    const propTaxTotal = prices.reduce((s, p) => s + calcPropertyTax(p), 0);
+    const denomForDeduction = prices.reduce((s, p) => {
+      const b = p * 0.6;
+      return s + (p <= 600000000 ? b * 0.001 : p <= 1500000000 ? b * 0.002 - 600000 : b * 0.004 - 3600000);
+    }, 0);
+    const deductiblePropTax = denomForDeduction > 0
+      ? propTaxTotal * (taxBase * 0.6 * rate) / denomForDeduction
+      : 0;
+
+    // 산출세액
+    const computedTax = Math.max(0, crtTax - Math.min(deductiblePropTax, crtTax));
+
+    // 세부담상한
+    const prevVal = parseFloat(document.getElementById('prev-year-tax').value) || 0;
+    const taxLimit = prevVal > 0 ? prevVal * 1.5 : null;
+    const finalTax = taxLimit !== null ? Math.min(computedTax, taxLimit) : computedTax;
+
+    // 농어촌특별세
+    const ruralTax = finalTax * 0.20;
+    const totalBurden = finalTax + ruralTax;
+
+    const badgeHtml = `<span class="badge ${isHeavy ? 'badge-heavy' : 'badge-normal'}">${isHeavy ? '중과세율' : '기본세율'}</span>`;
+    const limitRow = taxLimit !== null
+      ? `<div class="result-row">
+           <span class="result-label">세부담상한액 (전년도×150%)</span>
+           <span class="result-value">${fmt(taxLimit)}</span>
+         </div>`
+      : '';
+
+    area.innerHTML = `
+      <div class="result-card">
+        <div class="result-header">계산 결과</div>
+        <div class="result-rows">
+          <div class="result-row">
+            <span class="result-label">주택공시가격 합계</span>
+            <span class="result-value">${fmt(total)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">공제금액</span>
+            <span class="result-value">− ${fmt(deduction)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">공제초과금액</span>
+            <span class="result-value">${fmt(excessAmount)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">과세표준 (×60%)</span>
+            <span class="result-value">${fmt(taxBase)}</span>
+          </div>
+          <div class="result-divider"></div>
+          <div class="result-row">
+            <span class="result-label">적용 세율 ${badgeHtml}</span>
+            <span class="result-value">${(rate * 100).toFixed(1)}%</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">종합부동산세액 (누진공제 후)</span>
+            <span class="result-value">${fmt(crtTax)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">공제할 재산세액</span>
+            <span class="result-value">− ${fmt(deductiblePropTax)}</span>
+          </div>
+          <div class="result-divider"></div>
+          <div class="result-row">
+            <span class="result-label">산출세액</span>
+            <span class="result-value">${fmt(computedTax)}</span>
+          </div>
+          ${limitRow}
+          <div class="result-row">
+            <span class="result-label">종합부동산세 납부세액</span>
+            <span class="result-value">${fmt(finalTax)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">농어촌특별세 (×20%)</span>
+            <span class="result-value">${fmt(ruralTax)}</span>
+          </div>
+        </div>
+        <div class="total-row">
+          <span class="total-label">총 부담세액</span>
+          <span class="total-value">${fmt(totalBurden)}</span>
+        </div>
+      </div>`;
+  }
+
+  // ── 초기 렌더 ─────────────────────────────────────────────
+  renderHouses();
+</script>
+</body>
+</html>
