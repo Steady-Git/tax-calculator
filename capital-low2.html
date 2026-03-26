@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>저가양도·고가양도 세금 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #16161d;
+    --card: #1c1c26;
+    --border: #2a2a3a;
+    --accent: #e8c87a;
+    --accent2: #7ab8e8;
+    --accent3: #e87a7a;
+    --text: #e8e8f0;
+    --text-muted: #7a7a99;
+    --green: #7ae87a;
+    --orange: #e8a87a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(232,200,122,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,200,122,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header .label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  header h1 {
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  header h1 span {
+    color: var(--accent);
+  }
+
+  header p {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  /* Input section */
+  .input-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+
+  .input-card h2 {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 20px;
+  }
+
+  .toggle-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .toggle-btn .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+
+  .toggle-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,200,122,0.08);
+  }
+
+  .toggle-btn.active .dot {
+    background: var(--accent);
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 520px) {
+    .fields { grid-template-columns: 1fr; }
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .field label span {
+    color: var(--accent);
+    font-size: 10px;
+    margin-left: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 50px 11px 14px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap input:focus {
+    border-color: var(--accent);
+  }
+
+  .input-wrap .unit {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    pointer-events: none;
+  }
+
+  .preview-amount {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 16px;
+  }
+
+  .calc-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0f0f13;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .calc-btn:hover {
+    background: #f0d48a;
+    transform: translateY(-1px);
+  }
+
+  /* Results */
+  #results {
+    display: none;
+  }
+
+  #results.visible {
+    display: block;
+    animation: fadeUp 0.4s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .status-banner {
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .status-banner.normal {
+    background: rgba(122,232,122,0.1);
+    border: 1px solid rgba(122,232,122,0.3);
+    color: var(--green);
+  }
+
+  .status-banner.warning {
+    background: rgba(232,168,122,0.1);
+    border: 1px solid rgba(232,168,122,0.3);
+    color: var(--orange);
+  }
+
+  .status-banner.danger {
+    background: rgba(232,122,122,0.1);
+    border: 1px solid rgba(232,122,122,0.3);
+    color: var(--accent3);
+  }
+
+  .sections-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 700px) {
+    .sections-grid { grid-template-columns: 1fr; }
+  }
+
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .section-card.sang::before { background: var(--accent); }
+  .section-card.so::before { background: var(--accent2); }
+  .section-card.chui::before { background: var(--accent3); }
+
+  .section-card h3 {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-card.sang h3 { color: var(--accent); }
+  .section-card.so h3 { color: var(--accent2); }
+  .section-card.chui h3 { color: var(--accent3); }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .row .rkey {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .row .rval {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .row .rval.highlight {
+    color: var(--accent);
+    font-size: 13px;
+  }
+
+  .row .rval.blue { color: var(--accent2); }
+  .row .rval.red { color: var(--accent3); }
+  .row .rval.green { color: var(--green); }
+  .row .rval.orange { color: var(--orange); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 10px 0;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .tag.applicable { background: rgba(232,122,122,0.15); color: var(--accent3); border: 1px solid rgba(232,122,122,0.3); }
+  .tag.not-applicable { background: rgba(122,232,122,0.1); color: var(--green); border: 1px solid rgba(122,232,122,0.2); }
+  .tag.none { background: rgba(122,122,153,0.15); color: var(--text-muted); border: 1px solid rgba(122,122,153,0.2); }
+
+  .note-box {
+    background: rgba(232,200,122,0.05);
+    border: 1px solid rgba(232,200,122,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .note-box strong {
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .note-box ul {
+    padding-left: 14px;
+  }
+
+  .note-box li { margin-bottom: 4px; }
+
+  .sep-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 12px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sep-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <div class="label">Korean Tax Simulator</div>
+    <h1>저가양도 · 고가양도<br><span>세금 계산기</span></h1>
+    <p>시가와 거래가액을 입력하면 상증세법 · 소득세법 · 취득세법상 과세 여부를 자동 분석합니다</p>
+  </header>
+
+  <div class="input-card">
+    <h2>⬡ 거래 정보 입력</h2>
+
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="btn-special" onclick="setRelation('special')">
+        <span class="dot"></span> 특수관계인 거래
+      </button>
+      <button class="toggle-btn" id="btn-normal" onclick="setRelation('normal')">
+        <span class="dot"></span> 특수관계인 아님
+      </button>
+    </div>
+
+    <div class="fields">
+      <div class="field">
+        <label>시가 <span>(공시가격 또는 감정가)</span></label>
+        <div class="input-wrap">
+          <input type="text" id="inp-siga" placeholder="예: 1150000000" oninput="formatPreview('siga')">
+          <span class="unit">원</span>
+        </div>
+        <div class="preview-amount" id="prev-siga"></div>
+      </div>
+      <div class="field">
+        <label>거래가액 <span>(실제 양도/취득 금액)</span></label>
+        <div class="input-wrap">
+          <input type="text" id="inp-deal" placeholder="예: 800000000" oninput="formatPreview('deal')">
+          <span class="unit">원</span>
+        </div>
+        <div class="preview-amount" id="prev-deal"></div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">계산하기 →</button>
+  </div>
+
+  <div id="results">
+    <div id="status-banner" class="status-banner"></div>
+
+    <div class="sep-label">세목별 분석</div>
+
+    <div class="sections-grid">
+      <!-- 상증세법 -->
+      <div class="section-card sang">
+        <h3 id="sang-title">상증세법 (양수인)</h3>
+        <div id="sang-content"></div>
+      </div>
+      <!-- 소득세법 -->
+      <div class="section-card so">
+        <h3 id="so-title">소득세법 (양도인 · 양수인)</h3>
+        <div id="so-content"></div>
+      </div>
+      <!-- 취득세법 -->
+      <div class="section-card chui">
+        <h3>취득세법 (양수인)</h3>
+        <div id="chui-content"></div>
+      </div>
+    </div>
+
+    <div id="note-area"></div>
+  </div>
+</div>
+
+<script>
+let isSpecial = true;
+
+function setRelation(type) {
+  isSpecial = (type === 'special');
+  document.getElementById('btn-special').classList.toggle('active', isSpecial);
+  document.getElementById('btn-normal').classList.toggle('active', !isSpecial);
+}
+
+function parseNum(id) {
+  const v = document.getElementById(id).value.replace(/,/g, '').trim();
+  return parseFloat(v) || 0;
+}
+
+function formatPreview(which) {
+  const id = which === 'siga' ? 'inp-siga' : 'inp-deal';
+  const prevId = which === 'siga' ? 'prev-siga' : 'prev-deal';
+  const val = parseFloat(document.getElementById(id).value.replace(/,/g, '')) || 0;
+  document.getElementById(prevId).textContent = val > 0 ? '≈ ' + toKorean(val) : '';
+}
+
+function toKorean(n) {
+  if (n === 0) return '0원';
+  const units = ['', '만', '억', '조'];
+  let result = '';
+  const parts = [];
+  let temp = Math.abs(Math.round(n));
+  while (temp > 0) {
+    parts.push(temp % 10000);
+    temp = Math.floor(temp / 10000);
+  }
+  parts.reverse();
+  parts.forEach((p, i) => {
+    if (p > 0) result += p.toLocaleString() + units[parts.length - 1 - i] + ' ';
+  });
+  return result.trim() + '원';
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString() + '원';
+}
+
+function row(key, val, cls='') {
+  return `<div class="row"><span class="rkey">${key}</span><span class="rval ${cls}">${val}</span></div>`;
+}
+
+function tag(applicable) {
+  if (applicable === true) return '<span class="tag applicable">적용</span>';
+  if (applicable === false) return '<span class="tag not-applicable">해당없음</span>';
+  return '<span class="tag none">-</span>';
+}
+
+function calculate() {
+  const siga = parseNum('inp-siga');
+  const deal = parseNum('inp-deal');
+
+  if (!siga || !deal) {
+    alert('시가와 거래가액을 입력해주세요.');
+    return;
+  }
+
+  const diff = deal - siga; // 양수 = 고가양도, 음수 = 저가양도
+  const isLow  = deal < siga;  // 저가양도 (양도인이 싸게 팜, 양수인이 싸게 삼)
+  const isHigh = deal > siga;  // 고가양도 (양도인이 비싸게 팜, 양수인이 비싸게 삼)
+  const absDiff = Math.abs(diff);
+  const pct = siga > 0 ? (absDiff / siga) : 0;
+
+  // ===== 공통 기준선 =====
+  const 삼억 = 300000000;
+  const 시가30p = siga * 0.3;
+  const 시가5p  = siga * 0.05;
+  const minVal_상증 = Math.min(삼억, 시가30p);   // 상증세 기준: Min(시가×30%, 3억)
+  const minVal_소득 = Math.min(삼억, 시가5p);    // 소득세/취득세 기준: Min(시가×5%, 3억)
+
+  // ===== 상증세법 =====
+  // 과세요건: 차액 > Min(시가×30%, 3억)  [특수관계인]
+  //           차액 > Min(시가×30%, 3억) AND 차액/시가 ≥ 30%  [비특수관계인]
+  // 증여재산가액 = 차액 - Min(시가×30%, 3억)
+  let sangApplicable = false;
+  let sangGift = 0;
+
+  if (isSpecial) {
+    if (absDiff > minVal_상증) {
+      sangApplicable = true;
+      sangGift = absDiff - minVal_상증;
+    }
+  } else {
+    if (absDiff > minVal_상증 && pct >= 0.3) {
+      sangApplicable = true;
+      sangGift = absDiff - minVal_상증;
+    }
+  }
+  // 저가양도 → 양수인에게 증여, 고가양도 → 양도인에게 증여
+  const sangTarget = isLow ? '양수인' : '양도인';
+
+  // ===== 소득세법 =====
+  // 부당행위계산 요건: 특수관계인 + 차액 ≥ Min(시가×5%, 3억)
+  const 소득부당 = isSpecial && (absDiff >= minVal_소득);
+
+  // [양도인] 저가양도 시 부당행위계산부인 → 양도가액 = 시가
+  // [양수인] 저가양도 시 취득가액 = 실제 취득가 + 증여재산가액(상증세 과세된 경우)
+  //         고가양도 시 양수인 취득가액 = 시가 (부당행위 적용시)
+  let 양도인_양도가액 = deal;
+  let 양수인_취득가액 = deal;
+  let soApplicable_양도인 = false;
+  let soApplicable_양수인 = false;
+
+  if (isLow) {
+    // 양도인 부당행위계산부인
+    if (소득부당) {
+      soApplicable_양도인 = true;
+      양도인_양도가액 = siga;
+    }
+    // 양수인 취득가액 = 실제취득가 + 증여재산가액(증여로 과세된 경우)
+    if (sangApplicable) {
+      soApplicable_양수인 = true;
+      양수인_취득가액 = deal + sangGift;
+    }
+  } else if (isHigh) {
+    // 고가양도: 양수인 취득가액 = 시가 (부당행위 적용 시)
+    if (소득부당) {
+      soApplicable_양수인 = true;
+      양수인_취득가액 = siga;
+    }
+  }
+
+  // ===== 취득세법 =====
+  // 부당행위계산 요건: 특수관계인 + 차액 ≥ Min(시가×5%, 3억)
+  // 저가취득 시: 유상취득분(실제취득가) × 유상취득세율(4%) + 무상취득분(차액) × 증여취득세율(3.5%)
+  // 고가취득 시: 실제취득가 × 유상취득세율(4%) (고가이므로 실제가가 과세표준)
+  // 부당행위 미해당 시: 실제취득가 × 유상취득세율(4%)
+  const 취득세율_유상 = 0.04;
+  const 취득세율_증여 = 0.035;
+
+  let chuiApplicable = false;
+  let 취득세_유상분 = 0;
+  let 취득세_증여분 = 0;
+  let 취득세_합계 = 0;
+  let chuiNote = '';
+
+  if (isLow && 소득부당) {
+    chuiApplicable = true;
+    // 실제취득가 = 유상취득분, 차액 = 무상취득분(증여)
+    취득세_유상분 = deal * 취득세율_유상;
+    취득세_증여분 = absDiff * 취득세율_증여;
+    취득세_합계 = 취득세_유상분 + 취득세_증여분;
+    chuiNote = `실제취득가(${fmt(deal)}) × 4% + 차액(${fmt(absDiff)}) × 3.5%`;
+  } else if (isHigh && 소득부당) {
+    chuiApplicable = true;
+    취득세_유상분 = deal * 취득세율_유상;
+    취득세_합계 = 취득세_유상분;
+    chuiNote = `실제취득가(${fmt(deal)}) × 4% (고가취득)`;
+  } else {
+    취득세_유상분 = deal * 취득세율_유상;
+    취득세_합계 = 취득세_유상분;
+    chuiNote = `실제거래가(${fmt(deal)}) × 4%`;
+  }
+
+  // === 렌더링 ===
+  const results = document.getElementById('results');
+  results.classList.add('visible');
+
+  // 상태 배너
+  const banner = document.getElementById('status-banner');
+  let bannerClass, bannerText;
+  if (!isLow && !isHigh) {
+    bannerClass = 'normal';
+    bannerText = '✓ 시가 = 거래가액 — 정상 거래';
+  } else if (isLow) {
+    const diff_label = `시가 대비 ${(pct*100).toFixed(1)}% (${fmt(absDiff)}) 저가양도`;
+    bannerClass = sangApplicable ? 'danger' : 'warning';
+    bannerText = `${sangApplicable ? '⚠' : '△'} 저가양도 — ${diff_label} — ${sangApplicable ? '증여세 과세 요건 해당' : '과세 요건 미달'}`;
+  } else {
+    const diff_label = `시가 대비 ${(pct*100).toFixed(1)}% (${fmt(absDiff)}) 고가양도`;
+    bannerClass = sangApplicable ? 'danger' : 'warning';
+    bannerText = `${sangApplicable ? '⚠' : '△'} 고가양도 — ${diff_label} — ${sangApplicable ? '증여세 과세 요건 해당' : '과세 요건 미달'}`;
+  }
+  banner.className = `status-banner ${bannerClass}`;
+  banner.textContent = bannerText;
+
+  // ── 상증세법 카드 ──
+  // 제목: 저가→양수인, 고가→양도인
+  document.getElementById('sang-title').textContent =
+    isLow ? '상증세법 (양수인)' : isHigh ? '상증세법 (양도인)' : '상증세법';
+
+  let sangHTML = '';
+  sangHTML += row('시가 × 30%', fmt(시가30p));
+  sangHTML += row('3억 기준선', fmt(삼억));
+  sangHTML += row('Min(시가×30%, 3억)', fmt(minVal_상증), 'blue');
+  sangHTML += '<hr class="divider">';
+  sangHTML += row('시가와 거래가 차액', fmt(absDiff), absDiff > minVal_상증 ? 'red' : 'green');
+  sangHTML += row('과세 요건 (차액 > Min값)', absDiff > minVal_상증 ? '초과' : '미달', absDiff > minVal_상증 ? 'red' : 'green');
+  if (!isSpecial) {
+    sangHTML += row('30% 차이 요건', pct >= 0.3 ? '충족' : '미충족', pct >= 0.3 ? 'red' : 'green');
+  }
+  sangHTML += '<hr class="divider">';
+  sangHTML += `<div class="row"><span class="rkey">증여세 부과</span>${tag(sangApplicable)}</div>`;
+  if (sangApplicable) {
+    sangHTML += row('차액', fmt(absDiff));
+    sangHTML += row('(−) Min(시가×30%, 3억)', fmt(minVal_상증));
+    sangHTML += row('증여재산가액', fmt(sangGift), 'red highlight');
+    sangHTML += `<div style="font-size:11px; color:var(--text-muted); margin-top:6px;">${sangTarget}에게 증여세 부과</div>`;
+  }
+  document.getElementById('sang-content').innerHTML = sangHTML;
+
+  // ── 소득세법 카드 ──
+  document.getElementById('so-title').textContent = '소득세법 (양도인 · 양수인)';
+
+  let soHTML = '';
+  soHTML += row('시가 × 5%', fmt(시가5p));
+  soHTML += row('Min(시가×5%, 3억)', fmt(minVal_소득), 'blue');
+  soHTML += row('차액', fmt(absDiff));
+  soHTML += '<hr class="divider">';
+
+  if (isLow) {
+    // 양도인 섹션
+    soHTML += `<div style="font-size:10px; letter-spacing:1.5px; color:var(--accent); margin-bottom:6px; font-family:'IBM Plex Mono',monospace;">▸ 양도인</div>`;
+    soHTML += `<div class="row"><span class="rkey">부당행위계산부인</span>${tag(soApplicable_양도인)}</div>`;
+    if (soApplicable_양도인) {
+      soHTML += row('양도가액 (시가 적용)', fmt(양도인_양도가액), 'red highlight');
+      soHTML += `<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">차액 ≥ Min(시가×5%, 3억) → 양도가액을 시가로 재계산</div>`;
+    } else {
+      soHTML += row('양도가액 (실거래가)', fmt(deal), 'green');
+      soHTML += `<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">부당행위계산 미적용</div>`;
+    }
+    // 양수인 섹션
+    soHTML += `<div style="font-size:10px; letter-spacing:1.5px; color:var(--accent2); margin-bottom:6px; font-family:'IBM Plex Mono',monospace;">▸ 양수인</div>`;
+    soHTML += `<div class="row"><span class="rkey">취득가액 조정</span>${tag(soApplicable_양수인)}</div>`;
+    if (soApplicable_양수인) {
+      soHTML += row('실제 취득가', fmt(deal));
+      soHTML += row('(+) 증여재산가액', fmt(sangGift));
+      soHTML += row('취득가액 합계', fmt(양수인_취득가액), 'blue highlight');
+      soHTML += `<div style="font-size:11px; color:var(--text-muted);">증여세 과세된 금액을 취득가액에 가산 → 향후 양도시 양도차익 감소</div>`;
+    } else {
+      soHTML += row('취득가액 (실거래가)', fmt(deal), 'green');
+    }
+  } else if (isHigh) {
+    // 양도인은 고가양도 혜택
+    soHTML += `<div style="font-size:10px; letter-spacing:1.5px; color:var(--accent); margin-bottom:6px; font-family:'IBM Plex Mono',monospace;">▸ 양도인</div>`;
+    soHTML += row('양도가액', fmt(deal), 'green');
+    soHTML += `<div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">고가양도 → 실거래가 그대로 적용</div>`;
+    // 양수인 섹션
+    soHTML += `<div style="font-size:10px; letter-spacing:1.5px; color:var(--accent2); margin-bottom:6px; font-family:'IBM Plex Mono',monospace;">▸ 양수인</div>`;
+    soHTML += `<div class="row"><span class="rkey">부당행위계산부인</span>${tag(soApplicable_양수인)}</div>`;
+    if (soApplicable_양수인) {
+      soHTML += row('취득가액 (시가 적용)', fmt(양수인_취득가액), 'red highlight');
+      soHTML += `<div style="font-size:11px; color:var(--text-muted);">고가취득 → 취득가액을 시가로 함 (향후 양도차익 증가)</div>`;
+    } else {
+      soHTML += row('취득가액 (실거래가)', fmt(deal), 'green');
+    }
+  } else {
+    soHTML += row('양도가액 / 취득가액', fmt(deal), 'green');
+    soHTML += `<div class="row"><span class="rkey">부당행위계산</span>${tag(false)}</div>`;
+  }
+  document.getElementById('so-content').innerHTML = soHTML;
+
+  // ── 취득세법 카드 ──
+  let chuiHTML = '';
+  chuiHTML += row('실제 취득가', fmt(deal));
+  chuiHTML += row('시가', fmt(siga));
+  chuiHTML += row('Min(시가×5%, 3억)', fmt(minVal_소득), 'blue');
+  chuiHTML += '<hr class="divider">';
+  chuiHTML += `<div class="row"><span class="rkey">부당행위 적용</span>${tag(chuiApplicable)}</div>`;
+  chuiHTML += '<hr class="divider">';
+
+  if (chuiApplicable && isLow) {
+    chuiHTML += `<div style="font-size:10px; letter-spacing:1px; color:var(--accent); margin-bottom:8px; font-family:'IBM Plex Mono',monospace;">유상취득분 + 무상취득분 이중 과세</div>`;
+    chuiHTML += row('유상취득 과세표준', fmt(deal));
+    chuiHTML += row('유상취득 세율', '4%');
+    chuiHTML += row('유상취득세', fmt(취득세_유상분), 'blue');
+    chuiHTML += '<hr class="divider">';
+    chuiHTML += row('무상취득 과세표준 (차액)', fmt(absDiff));
+    chuiHTML += row('무상취득 세율 (증여)', '3.5%');
+    chuiHTML += row('무상취득세', fmt(취득세_증여분), 'orange');
+    chuiHTML += '<hr class="divider">';
+    chuiHTML += row('취득세 합계', fmt(취득세_합계), 'red highlight');
+  } else {
+    chuiHTML += row('과세표준', fmt(deal));
+    chuiHTML += row('세율', '4%');
+    chuiHTML += row('취득세 (참고)', fmt(취득세_합계), 'highlight');
+    chuiHTML += `<div style="font-size:10px; color:var(--text-muted); margin-top:4px;">※ ${chuiNote}</div>`;
+  }
+  chuiHTML += `<div style="font-size:10px; color:var(--text-muted); margin-top:6px;">※ 실제 세율은 물건 종류(주택·토지 등)에 따라 상이</div>`;
+
+  document.getElementById('chui-content').innerHTML = chuiHTML;
+
+  // ── 비고 ──
+  let noteHTML = `<div class="note-box"><strong>⬡ 참고사항</strong><ul>`;
+  if (isSpecial) {
+    noteHTML += `<li>특수관계인 거래 기준 적용 (상증세법 §35, 소득세법 §101, 지방세법 §10의2)</li>`;
+    noteHTML += `<li>상증세 과세요건: 차액 > Min(시가×30%, 3억) / 증여재산가액 = 차액 − Min(시가×30%, 3억)</li>`;
+    noteHTML += `<li>소득세·취득세 부당행위 요건: 차액 ≥ Min(시가×5%, 3억)</li>`;
+  } else {
+    noteHTML += `<li>비특수관계인 거래 기준 적용</li>`;
+    noteHTML += `<li>상증세 과세요건: 차액 > Min(시가×30%, 3억) <b>AND</b> 차액/시가 ≥ 30%</li>`;
+    noteHTML += `<li>소득세·취득세 부당행위계산: 특수관계인 간에만 적용 → 해당없음</li>`;
+  }
+  if (isLow && chuiApplicable) {
+    noteHTML += `<li>취득세: 저가취득 시 실제취득가(유상분, 4%) + 차액(무상증여분, 3.5%) 이중 세율 적용</li>`;
+  }
+  noteHTML += `<li>본 계산기는 참고용이며 실제 세무 판단은 세무사·회계사와 상담하세요.</li>`;
+  noteHTML += `</ul></div>`;
+  document.getElementById('note-area').innerHTML = noteHTML;
+
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
