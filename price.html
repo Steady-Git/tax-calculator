@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공동주택 공시가격 조회</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --cream: #ede8de;
+    --accent: #c8392b;
+    --gold: #b8955a;
+    --muted: #7a7060;
+    --border: #d5cfc3;
+    --success: #2a7a4b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(184,149,90,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(200,57,43,0.05) 0%, transparent 50%);
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding: 28px 48px 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .logo-ko {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 300;
+  }
+
+  .source-tag {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .hero h1 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero h1 span { color: var(--accent); }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .divider {
+    width: 40px;
+    height: 2px;
+    background: var(--gold);
+    margin: 16px auto;
+  }
+
+  /* API Key Section */
+  .api-section {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .api-section h3 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+  }
+
+  .api-section p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .api-section a { color: var(--accent); }
+
+  /* Search Form */
+  .search-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    box-shadow: 0 2px 20px rgba(26,26,46,0.06);
+    margin-bottom: 32px;
+  }
+
+  .search-card h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  input, select {
+    border: 1px solid var(--border);
+    background: var(--paper);
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    border-radius: 2px;
+    transition: border-color 0.2s, background 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--ink);
+    background: white;
+  }
+
+  .btn-search {
+    width: 100%;
+    padding: 14px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+  }
+
+  .btn-search:hover { background: #2d2d4a; }
+  .btn-search:active { transform: scale(0.99); }
+  .btn-search:disabled { background: var(--muted); cursor: not-allowed; }
+
+  /* Result */
+  .result-wrap {
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .result-header h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .result-count {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--cream);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .result-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--ink);
+    color: white;
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: var(--paper); }
+
+  .price-cell {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 14px;
+  }
+
+  .area-cell {
+    color: var(--success);
+    font-weight: 500;
+  }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error / Notice */
+  .notice {
+    padding: 16px 20px;
+    border-radius: 2px;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 16px;
+  }
+
+  .notice.error {
+    background: #fdf0ef;
+    border: 1px solid #e8a89e;
+    color: var(--accent);
+    border-left: 3px solid var(--accent);
+  }
+
+  .notice.info {
+    background: #f0f5f2;
+    border: 1px solid #a9c9b8;
+    color: var(--success);
+    border-left: 3px solid var(--success);
+  }
+
+  .year-badge {
+    display: inline-block;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+
+  .address-display {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    border-radius: 2px;
+  }
+
+  .address-display strong { color: var(--ink); font-weight: 500; }
+
+  footer {
+    text-align: center;
+    padding: 32px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo-ko">공동주택 공시가격 조회</span>
+  <span class="logo-sub">Apartment Price Lookup</span>
+  <span class="source-tag">공공데이터포털 API</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>공동주택 <span>공시가격</span> 조회</h1>
+    <div class="divider"></div>
+    <p>국토교통부 공공 API를 통해 아파트·연립·다세대 공시가격 및 전용면적을 조회합니다.</p>
+  </div>
+
+  <!-- API Key -->
+  <div class="api-section">
+    <h3>🔑 API 인증키 설정</h3>
+    <p>
+      공공데이터포털(<a href="https://www.data.go.kr" target="_blank">data.go.kr</a>)에서 무료로 발급받으세요.<br>
+      검색: <strong>국토교통부 공동주택가격정보서비스</strong> → 활용 신청 → 일반 인증키(Decoding) 사용
+    </p>
+    <div class="form-group">
+      <label>공공데이터포털 서비스키 (Decoding)</label>
+      <input type="text" id="apiKey" placeholder="발급받은 서비스키를 입력하세요" />
+    </div>
+  </div>
+
+  <!-- Search Form -->
+  <div class="search-card">
+    <h2>📍 주소 입력</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>시도</label>
+        <input type="text" id="sido" placeholder="예: 서울특별시" />
+      </div>
+      <div class="form-group">
+        <label>시군구</label>
+        <input type="text" id="sigungu" placeholder="예: 강남구" />
+      </div>
+      <div class="form-group">
+        <label>법정동</label>
+        <input type="text" id="dong" placeholder="예: 역삼동" />
+      </div>
+      <div class="form-group">
+        <label>번지 (지번)</label>
+        <input type="text" id="bun" placeholder="예: 737" />
+      </div>
+      <div class="form-group">
+        <label>단지명 (선택)</label>
+        <input type="text" id="danji" placeholder="예: 래미안역삼" />
+      </div>
+      <div class="form-group">
+        <label>기준연도</label>
+        <select id="year">
+          <option value="2026">2026년 (공시안)</option>
+          <option value="2025" selected>2025년</option>
+          <option value="2024">2024년</option>
+          <option value="2023">2023년</option>
+          <option value="2022">2022년</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-search" onclick="search()">공시가격 조회하기</button>
+  </div>
+
+  <div id="resultArea"></div>
+</main>
+
+<footer>
+  본 서비스는 <strong>국토교통부 공동주택가격정보서비스</strong> 공공 API를 활용합니다.<br>
+  공시가격은 재산세·종부세 등 세금 산정 기준으로 활용됩니다. 정확한 정보는 <a href="https://www.realtyprice.kr" target="_blank">realtyprice.kr</a> 에서도 확인 가능합니다.
+</footer>
+
+<script>
+  async function search() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const sido = document.getElementById('sido').value.trim();
+    const sigungu = document.getElementById('sigungu').value.trim();
+    const dong = document.getElementById('dong').value.trim();
+    const bun = document.getElementById('bun').value.trim();
+    const danji = document.getElementById('danji').value.trim();
+    const year = document.getElementById('year').value;
+
+    if (!apiKey) {
+      showError('API 인증키를 입력해주세요. 공공데이터포털(data.go.kr)에서 무료로 발급받을 수 있습니다.');
+      return;
+    }
+    if (!sido || !sigungu || !dong) {
+      showError('시도, 시군구, 법정동은 필수 입력 항목입니다.');
+      return;
+    }
+
+    showLoading();
+
+    try {
+      // 공동주택가격정보서비스 API 호출
+      // 엔드포인트: getPblntfPriceLList (공동주택가격 목록)
+      const params = new URLSearchParams({
+        serviceKey: apiKey,
+        pageNo: '1',
+        numOfRows: '100',
+        resultType: 'json',
+        stdYear: year,
+        sido: sido,
+        gugun: sigungu,
+        dong: dong,
+      });
+      if (bun) params.append('bun', bun);
+
+      const url = `https://apis.data.go.kr/1611000/AptPriceService2/getAptTradeDetailList?${params}`;
+      
+      // 실제 API는 CORS 제한이 있을 수 있으므로 공동주택가격 전용 API 사용
+      const priceUrl = `https://apis.data.go.kr/1611000/nsdi/ApartHousingPriceService/wfs/getApartHousingPriceAttr?${new URLSearchParams({
+        serviceKey: apiKey,
+        pageNo: '1',
+        numOfRows: '50',
+        resultType: 'json',
+        stdYear: year,
+        sido: sido,
+        gugun: sigungu,
+        dong: dong,
+      })}`;
+
+      // 국토교통부 공동주택가격 조회 API (정식 엔드포인트)
+      const finalUrl = `https://apis.data.go.kr/1611000/ApartHousingPriceService/getApartHousingPriceList?${new URLSearchParams({
+        serviceKey: apiKey,
+        pageNo: '1',
+        numOfRows: '100',
+        resultType: 'json',
+        stdYear: year,
+        sido: sido,
+        gugun: sigungu,
+        dong: dong,
+      })}`;
+
+      const res = await fetch(finalUrl);
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const text = await res.text();
+      
+      // XML or JSON 처리
+      let items = [];
+      if (text.trim().startsWith('<')) {
+        // XML 응답 파싱
+        items = parseXML(text, danji);
+      } else {
+        const data = JSON.parse(text);
+        const body = data?.response?.body;
+        if (body?.items?.item) {
+          items = Array.isArray(body.items.item) ? body.items.item : [body.items.item];
+          if (danji) items = items.filter(i => (i.kaptNm || i.complexNm || '').includes(danji));
+        }
+      }
+
+      if (items.length === 0) {
+        showError('조회 결과가 없습니다. 주소 정보를 확인하거나 다른 연도를 선택해보세요.');
+        return;
+      }
+
+      showResults(items, { sido, sigungu, dong, bun, year });
+
+    } catch (err) {
+      console.error(err);
+      showError(`조회 중 오류가 발생했습니다: ${err.message}<br><br>
+        <strong>해결 방법:</strong><br>
+        1. API 인증키가 올바른지 확인하세요 (Decoding 키 사용)<br>
+        2. 공공데이터포털에서 해당 API 활용 신청이 승인되었는지 확인하세요<br>
+        3. 주소 형식을 정확히 입력했는지 확인하세요 (예: 서울특별시, 강남구, 역삼동)<br>
+        4. CORS 오류 시 서버 환경에서 실행하거나 CORS 프록시를 이용하세요`);
+    }
+  }
+
+  function parseXML(xmlText, danjiFilter) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'text/xml');
+    
+    // 오류 확인
+    const errMsg = doc.querySelector('errMsg, returnMsg');
+    if (errMsg) {
+      const msg = errMsg.textContent;
+      if (msg && msg !== 'NORMAL SERVICE.') throw new Error(msg);
+    }
+
+    const items = [...doc.querySelectorAll('item')];
+    return items.filter(item => {
+      if (!danjiFilter) return true;
+      const nm = item.querySelector('kaptNm, complexNm, aptNm')?.textContent || '';
+      return nm.includes(danjiFilter);
+    }).map(item => {
+      const get = (tags) => {
+        for (const tag of tags.split(',')) {
+          const el = item.querySelector(tag.trim());
+          if (el) return el.textContent.trim();
+        }
+        return '-';
+      };
+      return {
+        complexNm: get('kaptNm, complexNm, aptNm'),
+        dongNm: get('dongNm, buildNm'),
+        hoNm: get('hoNm, unitNm'),
+        prvuseAr: get('prvuseAr, excluUseAr, area'),
+        pblntfPrc: get('pblntfPrc, notifyPrice, price'),
+        stdYear: get('stdYear, baseYear'),
+      };
+    });
+  }
+
+  function showResults(items, { sido, sigungu, dong, bun, year }) {
+    const area = document.getElementById('resultArea');
+    
+    const rows = items.map(item => `
+      <tr>
+        <td>${item.complexNm || item.kaptNm || '-'}</td>
+        <td>${item.dongNm || '-'}</td>
+        <td>${item.hoNm || '-'}</td>
+        <td class="area-cell">${formatArea(item.prvuseAr || item.excluUseAr)} ㎡</td>
+        <td class="price-cell">${formatPrice(item.pblntfPrc || item.notifyPrice)}</td>
+        <td>${item.stdYear || year}년</td>
+      </tr>
+    `).join('');
+
+    area.innerHTML = `
+      <div class="result-wrap">
+        <div class="result-header">
+          <h2>조회 결과</h2>
+          <span class="result-count">총 ${items.length}건</span>
+        </div>
+        <div class="address-display">
+          🏠 <strong>${sido} ${sigungu} ${dong}${bun ? ' ' + bun : ''}</strong> · ${year}년 기준
+        </div>
+        <div class="result-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>단지명</th>
+                <th>동</th>
+                <th>호수</th>
+                <th>전용면적</th>
+                <th>공동주택가격</th>
+                <th>기준연도</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="notice info" style="margin-top:16px;">
+          ✅ 공시가격은 매년 1월 1일 기준으로 산정됩니다. 재산세·종합부동산세 등 세금 산정의 기준이 됩니다.
+        </div>
+      </div>
+    `;
+  }
+
+  function formatPrice(val) {
+    if (!val || val === '-') return '-';
+    const num = parseInt(val.toString().replace(/,/g, ''));
+    if (isNaN(num)) return val;
+    if (num >= 100000000) {
+      const eok = Math.floor(num / 100000000);
+      const man = Math.floor((num % 100000000) / 10000);
+      return man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`;
+    }
+    return `${(num / 10000).toLocaleString()}만원`;
+  }
+
+  function formatArea(val) {
+    if (!val || val === '-') return '-';
+    const num = parseFloat(val);
+    return isNaN(num) ? val : num.toFixed(2);
+  }
+
+  function showLoading() {
+    document.getElementById('resultArea').innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>공시가격 정보를 조회하는 중입니다...</p>
+      </div>
+    `;
+  }
+
+  function showError(msg) {
+    document.getElementById('resultArea').innerHTML = `
+      <div class="notice error">⚠️ ${msg}</div>
+    `;
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') search();
+  });
+</script>
+</body>
+</html>
