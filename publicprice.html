@@ -173,27 +173,79 @@ tr:hover td { background:var(--card); }
 <script>
 /* ═══════════ CONFIG ═══════════ */
 const JUSO_KEY  = "U01TX0FVVEgyMDI2MDQwMTEwMjQxNTExNzgzMzQ=";
-const KEY_LAND  = "24810F97-80F7-340D-9047-15D5C151086F";  // 개별공시지가
-const KEY_HOUSE = "AA5D44CB-3AEF-3B25-8E4C-57B01FBA3C66";  // 개별주택가격
-const KEY_APT   = "65DCDAF0-C21A-37CE-A7AE-37187413840A";  // 공동주택공시가격
+const KEY_LAND  = "24810F97-80F7-340D-9047-15D5C151086F";
+const KEY_HOUSE = "AA5D44CB-3AEF-3B25-8E4C-57B01FBA3C66";
+const KEY_APT   = "65DCDAF0-C21A-37CE-A7AE-37187413840A";
 
 const NED = "https://api.vworld.kr/ned/data";
 const CUR_YEAR = new Date().getFullYear();
 const YEARS = Array.from({length:6}, (_,i) => CUR_YEAR - i);
 
-let cur = null;   // selected address info
+let cur = null;
 let selYr = CUR_YEAR;
 
-/* ═══════════ PNU 생성 ═══════════
-  PNU = 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산여부(1) + 본번(4) + 부번(4)
-  juso API의 admCd(10자리) + mtYn + lnbrMnnm(4) + lnbrSlno(4) = 19자리
-══════════════════════════════════ */
+/* ═══════════ PNU 생성 ═══════════ */
 function makePNU(info) {
-  const admCd = info.admCd;          // 10자리 법정동코드
-  const mt    = info.mtYn === '1' ? '2' : '1';  // 산여부
+  const admCd = info.admCd;
+  const mt    = info.mtYn === '1' ? '2' : '1';
   const bun   = String(info.lnbrMnnm || '0').padStart(4,'0');
   const ji    = String(info.lnbrSlno || '0').padStart(4,'0');
-  return admCd + mt + bun + ji;      // 19자리
+  return admCd + mt + bun + ji;
+}
+
+/* ═══════════ 원단위 포맷 ═══════════ */
+function fmtWon(won) {
+  if (!won || won <= 0) return '—';
+  const eok = Math.floor(won / 100000000);
+  const man = Math.floor((won % 100000000) / 10000);
+  let s = '';
+  if (eok) s += eok.toLocaleString() + '억 ';
+  if (man) s += man.toLocaleString() + '만 ';
+  if (!eok && !man) s += (won % 10000).toLocaleString() + ' ';
+  return s.trim() + '원';
+}
+
+/* ═══════════ Claude AI 프록시 호출
+   vworld ned API는 브라우저에서 직접 호출 시 CORS 차단됨.
+   Claude AI를 중간 프록시로 사용해 서버 측에서 데이터를 가져옴.
+════════════════════════════════════ */
+async function callViaAI(endpoint, key, params) {
+  const queryStr = new URLSearchParams({ format:'json', key, domain:'', ...params }).toString();
+  const url = `${NED}/${endpoint}?${queryStr}`;
+
+  const prompt = `다음 URL에 HTTP GET 요청을 보내고, 응답 JSON을 그대로 반환해줘. 설명 없이 JSON만 출력해.
+URL: ${url}`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`AI API HTTP ${res.status}`);
+  const data = await res.json();
+
+  // content 블록에서 텍스트 추출
+  const text = (data.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+
+  // JSON 파싱 시도
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // JSON 블록만 추출 시도
+    const m = cleaned.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+    throw new Error('AI 응답 파싱 실패: ' + cleaned.slice(0, 100));
+  }
 }
 
 /* ═══════════ 주소 검색 ═══════════ */
@@ -289,26 +341,9 @@ function setYear(y) {
   loadAll();
 }
 
-/* ═══════════ 원단위 포맷 ═══════════ */
-function fmtWon(won) {
-  if (!won || won <= 0) return '—';
-  const eok = Math.floor(won / 100000000);
-  const man = Math.floor((won % 100000000) / 10000);
-  let s = '';
-  if (eok) s += eok.toLocaleString() + '억 ';
-  if (man) s += man.toLocaleString() + '만 ';
-  if (!eok && !man) s += (won % 10000).toLocaleString() + ' ';
-  return s.trim() + '원';
-}
-
-/* ═══════════ API 호출 공통 ═══════════ */
+/* ═══════════ 전체 조회 ═══════════ */
 async function nedFetch(endpoint, key, params) {
-  const p = new URLSearchParams({ format:'json', key, domain:'', ...params });
-  const res = await fetch(`${NED}/${endpoint}?${p}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  if (j.error) throw new Error(j.error.msg || 'API 오류');
-  return j;
+  return await callViaAI(endpoint, key, params);
 }
 
 /* ═══════════ 전체 조회 ═══════════ */
