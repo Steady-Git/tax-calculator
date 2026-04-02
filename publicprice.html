@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공시가격 조회</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f4ef;
+  --surf: #ffffff;
+  --card: #faf8f4;
+  --border: #e6dfd3;
+  --border2: #cfc8ba;
+  --ink: #1a1612;
+  --muted: #7a6e5e;
+  --muted2: #a89d8c;
+  --blue: #1a4f8a;   --blue-l: #eaf1f9;
+  --green: #1a6b3e;  --green-l: #eaf4ef;
+  --amber: #8a5000;  --amber-l: #fef6e8;
+  --red: #8a1a1a;    --red-l: #faeaea;
+  --violet: #5b2d8a; --violet-l: #f3ecfa;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --r: 8px;
+  --sh: 0 2px 16px rgba(26,22,18,.07);
+  --sh2: 0 4px 28px rgba(26,22,18,.11);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font-family:var(--sans); min-height:100vh; font-size:14px; line-height:1.6; }
+body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; }
+.page { max-width:960px; margin:0 auto; padding:44px 20px 100px; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+.hdr { border-bottom:2.5px solid var(--ink); padding-bottom:18px; margin-bottom:32px; display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.hdr h1 { font-size:22px; font-weight:700; letter-spacing:-.5px; display:flex; align-items:center; gap:10px; }
+.hdr p { font-size:11px; color:var(--muted); font-family:var(--mono); margin-top:4px; }
+.hdr-badge { font-family:var(--mono); font-size:10px; color:var(--muted); background:var(--card); border:1px solid var(--border2); padding:6px 12px; border-radius:var(--r); line-height:1.8; text-align:right; }
+
+/* ── SEARCH ── */
+.search-card { background:var(--surf); border:1px solid var(--border); border-radius:12px; padding:22px; box-shadow:var(--sh); margin-bottom:18px; }
+.flabel { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:1px; margin-bottom:8px; }
+.srow { display:flex; gap:8px; }
+.sinput { flex:1; border:1.5px solid var(--border); border-radius:var(--r); padding:12px 15px; font-family:var(--sans); font-size:15px; background:var(--card); color:var(--ink); outline:none; transition:border-color .15s; }
+.sinput:focus { border-color:var(--blue); }
+.sinput::placeholder { color:var(--muted2); }
+.btn { padding:11px 20px; border-radius:var(--r); font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer; border:1.5px solid transparent; transition:all .15s; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.btn-p { background:var(--blue); color:#fff; } .btn-p:hover { background:#143d6e; }
+.btn-g { background:transparent; color:var(--muted); border-color:var(--border2); } .btn-g:hover { border-color:var(--ink); color:var(--ink); }
+
+.alist { margin-top:10px; display:flex; flex-direction:column; gap:5px; }
+.aitem { background:var(--card); border:1.5px solid var(--border); border-radius:var(--r); padding:11px 14px; cursor:pointer; transition:all .15s; display:flex; gap:9px; align-items:flex-start; }
+.aitem:hover { border-color:var(--blue); background:var(--blue-l); }
+.abadge { flex-shrink:0; font-size:10px; font-family:var(--mono); background:var(--blue-l); color:var(--blue); border-radius:3px; padding:2px 7px; margin-top:1px; }
+.aroad { font-size:13px; font-weight:500; line-height:1.4; }
+.ajibun { font-size:11px; color:var(--muted); margin-top:1px; }
+
+/* ── CHIP ── */
+.chip { display:flex; align-items:flex-start; gap:10px; background:var(--blue-l); border:1.5px solid rgba(26,79,138,.2); border-radius:var(--r); padding:12px 16px; margin-bottom:22px; animation:fu .25s ease; }
+.chip-main { color:var(--blue); font-weight:600; font-size:13px; }
+.chip-sub { font-size:11px; color:var(--muted); font-family:var(--mono); margin-top:3px; }
+
+/* ── YEAR SELECTOR ── */
+.year-bar { display:flex; align-items:center; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
+.year-label { font-family:var(--mono); font-size:11px; color:var(--muted); }
+.year-btn { padding:5px 14px; border-radius:20px; border:1.5px solid var(--border2); background:transparent; color:var(--muted); font-family:var(--mono); font-size:12px; cursor:pointer; transition:all .15s; }
+.year-btn:hover { border-color:var(--blue); color:var(--blue); }
+.year-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+/* ── 3 PRICE CARDS ── */
+.cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:24px; }
+@media(max-width:700px) { .cards-grid { grid-template-columns:1fr; } }
+
+.pcard { background:var(--surf); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:var(--sh); animation:fu .35s ease; }
+.pcard-head { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.pcard-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+.pcard-ttl { font-size:14px; font-weight:700; }
+.pcard-sub { font-size:10px; color:var(--muted); font-family:var(--mono); margin-top:2px; }
+.pcard-body { padding:20px; }
+
+/* land color */
+.land .pcard-head { background:rgba(26,107,62,.04); }
+.land .pcard-icon { background:var(--green-l); }
+/* house color */
+.house .pcard-head { background:rgba(138,80,0,.04); }
+.house .pcard-icon { background:var(--amber-l); }
+/* apt color */
+.apt .pcard-head { background:rgba(26,79,138,.04); }
+.apt .pcard-icon { background:var(--blue-l); }
+
+/* price display */
+.price-main { font-size:26px; font-weight:700; letter-spacing:-.5px; line-height:1.2; margin-bottom:4px; }
+.price-sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+.kv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.kv-item .kv-label { font-size:10px; color:var(--muted); font-family:var(--mono); margin-bottom:3px; }
+.kv-item .kv-val { font-size:13px; font-weight:500; }
+
+/* history table */
+.hist-card { background:var(--surf); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--sh); animation:fu .35s ease; }
+.hist-head { background:var(--card); border-bottom:1px solid var(--border); padding:13px 18px; display:flex; align-items:center; justify-content:space-between; }
+.hist-ttl { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.twrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:var(--card); padding:8px 14px; text-align:left; font-size:10px; font-family:var(--mono); color:var(--muted); border-bottom:1.5px solid var(--border); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--card); }
+.mono { font-family:var(--mono); font-size:11px; }
+.tag { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+.tag-b { background:var(--blue-l); color:var(--blue); }
+.tag-g { background:var(--green-l); color:var(--green); }
+.tag-a { background:var(--amber-l); color:var(--amber); }
+.tag-r { background:var(--red-l); color:var(--red); }
+
+/* apt list table */
+.apt-list-card { background:var(--surf); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--sh); margin-top:14px; animation:fu .3s ease; }
+
+/* loading / empty / err */
+.loading { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 20px; gap:12px; color:var(--muted); font-size:12px; font-family:var(--mono); }
+.spinner { width:26px; height:26px; border:2px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; }
+.empty { text-align:center; padding:40px 20px; color:var(--muted); }
+.empty .ei { font-size:32px; margin-bottom:10px; }
+.empty p { font-size:12px; line-height:1.9; }
+.errbox { background:var(--red-l); border:1.5px solid rgba(138,26,26,.2); border-radius:var(--r); padding:14px; color:var(--red); font-size:12px; display:flex; gap:8px; margin-top:10px; }
+.hint { background:var(--surf); border:1px solid var(--border); border-radius:12px; padding:56px 24px; text-align:center; color:var(--muted); box-shadow:var(--sh); }
+.hint .hi { font-size:46px; margin-bottom:14px; }
+.hint p { font-size:13px; line-height:2; max-width:440px; margin:0 auto; }
+
+@keyframes fu { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@media(max-width:600px) { .srow{flex-wrap:wrap;} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <h1>🏡 공시가격 조회</h1>
+      <p>vworld OpenAPI · 개별공시지가 · 개별주택가격 · 공동주택공시가격</p>
+    </div>
+    <div class="hdr-badge">국가중점데이터 API<br>api.vworld.kr / juso.go.kr</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <div class="flabel">// 주소 검색 — 도로명 또는 지번 입력</div>
+    <div class="srow">
+      <input class="sinput" id="addrInput"
+        placeholder="예: 서울 강남구 테헤란로 152  또는  서울 강남구 역삼동 737"
+        onkeydown="if(event.key==='Enter') searchAddr()">
+      <button class="btn btn-p" onclick="searchAddr()">🔍 검색</button>
+      <button class="btn btn-g" onclick="resetAll()">↺ 초기화</button>
+    </div>
+    <div id="addrResults"></div>
+  </div>
+
+  <!-- Chip -->
+  <div id="addrChip" style="display:none"></div>
+
+  <!-- Main -->
+  <div id="main">
+    <div class="hint">
+      <div class="hi">🏘</div>
+      <p>위에서 <strong style="color:var(--ink)">주소를 검색</strong>하고 선택하면<br>
+      <strong style="color:var(--ink)">개별공시지가 · 개별주택가격 · 공동주택공시가격</strong>을<br>
+      연도별로 조회합니다.</p>
+    </div>
+  </div>
+
+</div>
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const JUSO_KEY  = "U01TX0FVVEgyMDI2MDQwMTEwMjQxNTExNzgzMzQ=";
+const KEY_LAND  = "24810F97-80F7-340D-9047-15D5C151086F";  // 개별공시지가
+const KEY_HOUSE = "AA5D44CB-3AEF-3B25-8E4C-57B01FBA3C66";  // 개별주택가격
+const KEY_APT   = "65DCDAF0-C21A-37CE-A7AE-37187413840A";  // 공동주택공시가격
+
+const NED = "https://api.vworld.kr/ned/data";
+const CUR_YEAR = new Date().getFullYear();
+const YEARS = Array.from({length:6}, (_,i) => CUR_YEAR - i);
+
+let cur = null;   // selected address info
+let selYr = CUR_YEAR;
+
+/* ═══════════ PNU 생성 ═══════════
+  PNU = 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산여부(1) + 본번(4) + 부번(4)
+  juso API의 admCd(10자리) + mtYn + lnbrMnnm(4) + lnbrSlno(4) = 19자리
+══════════════════════════════════ */
+function makePNU(info) {
+  const admCd = info.admCd;          // 10자리 법정동코드
+  const mt    = info.mtYn === '1' ? '2' : '1';  // 산여부
+  const bun   = String(info.lnbrMnnm || '0').padStart(4,'0');
+  const ji    = String(info.lnbrSlno || '0').padStart(4,'0');
+  return admCd + mt + bun + ji;      // 19자리
+}
+
+/* ═══════════ 주소 검색 ═══════════ */
+async function searchAddr() {
+  const q = document.getElementById('addrInput').value.trim();
+  if (!q) { alert('주소를 입력하세요.'); return; }
+  const el = document.getElementById('addrResults');
+  el.innerHTML = `<div style="padding:10px;font-family:var(--mono);font-size:12px;color:var(--muted)">⟳ 검색 중...</div>`;
+  try {
+    const res = await fetch(
+      `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${JUSO_KEY}&currentPage=1&countPerPage=8&keyword=${encodeURIComponent(q)}&resultType=json`
+    );
+    const j = await res.json();
+    const list = j?.results?.juso ?? [];
+    if (!list.length) {
+      el.innerHTML = `<div style="padding:10px;color:var(--muted);font-size:13px">검색 결과가 없습니다.</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="alist">${list.map(x => {
+      const info = JSON.stringify({
+        admCd:     x.admCd,
+        sigungu:   x.sggNm || x.siNm,
+        emd:       x.emdNm || '',
+        road:      x.roadAddr,
+        jibun:     x.jibunAddr,
+        bdNm:      x.bdNm || '',
+        bdKdcd:    x.bdKdcd,
+        lnbrMnnm:  x.lnbrMnnm || '0',
+        lnbrSlno:  x.lnbrSlno || '0',
+        mtYn:      x.mtYn || '0',
+      });
+      return `<div class="aitem" onclick='pick(${info})'>
+        <span class="abadge">${x.bdKdcd==='1'?'공동':'일반'}</span>
+        <div>
+          <div class="aroad">${x.roadAddr}${x.bdNm?` <span style="color:var(--amber)">(${x.bdNm})</span>`:''}</div>
+          <div class="ajibun">지번: ${x.jibunAddr}</div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* ═══════════ 주소 선택 ═══════════ */
+function pick(info) {
+  cur = info;
+  cur.pnu = makePNU(info);
+
+  document.getElementById('addrInput').value = info.road;
+  document.getElementById('addrResults').innerHTML = '';
+
+  const chip = document.getElementById('addrChip');
+  chip.style.display = 'flex'; chip.className = 'chip';
+  chip.innerHTML = `<span>📍</span>
+    <div>
+      <div class="chip-main">${info.road}${info.bdNm?` <span style="color:var(--amber);font-size:12px">(${info.bdNm})</span>`:''}</div>
+      <div class="chip-sub">지번: ${info.jibun} &nbsp;·&nbsp; PNU: <b>${info.pnu}</b> &nbsp;·&nbsp; ${info.sigungu} ${info.emd}</div>
+    </div>`;
+
+  buildMain();
+}
+
+/* ═══════════ 메인 UI ═══════════ */
+function buildMain() {
+  document.getElementById('main').innerHTML = `
+    <div class="year-bar">
+      <span class="year-label">// 공시기준년도</span>
+      ${YEARS.map(y=>`<button class="year-btn${y===selYr?' active':''}" onclick="setYear(${y})">${y}</button>`).join('')}
+    </div>
+    <div class="cards-grid">
+      <div class="pcard land" id="card-land">
+        <div class="pcard-head"><div class="pcard-icon">🌿</div><div><div class="pcard-ttl">개별공시지가</div><div class="pcard-sub">토지 단위면적당 가격</div></div></div>
+        <div class="pcard-body" id="body-land"><div class="loading"><div class="spinner"></div><span>조회 중...</span></div></div>
+      </div>
+      <div class="pcard house" id="card-house">
+        <div class="pcard-head"><div class="pcard-icon">🏠</div><div><div class="pcard-ttl">개별주택가격</div><div class="pcard-sub">단독·다가구 공시가격</div></div></div>
+        <div class="pcard-body" id="body-house"><div class="loading"><div class="spinner"></div><span>조회 중...</span></div></div>
+      </div>
+      <div class="pcard apt" id="card-apt">
+        <div class="pcard-head"><div class="pcard-icon">🏢</div><div><div class="pcard-ttl">공동주택공시가격</div><div class="pcard-sub">아파트·연립·다세대</div></div></div>
+        <div class="pcard-body" id="body-apt"><div class="loading"><div class="spinner"></div><span>조회 중...</span></div></div>
+      </div>
+    </div>
+    <div id="hist-section"></div>`;
+
+  loadAll();
+}
+
+function setYear(y) {
+  selYr = y;
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.toggle('active', +b.textContent === y));
+  loadAll();
+}
+
+/* ═══════════ 원단위 포맷 ═══════════ */
+function fmtWon(won) {
+  if (!won || won <= 0) return '—';
+  const eok = Math.floor(won / 100000000);
+  const man = Math.floor((won % 100000000) / 10000);
+  let s = '';
+  if (eok) s += eok.toLocaleString() + '억 ';
+  if (man) s += man.toLocaleString() + '만 ';
+  if (!eok && !man) s += (won % 10000).toLocaleString() + ' ';
+  return s.trim() + '원';
+}
+
+/* ═══════════ API 호출 공통 ═══════════ */
+async function nedFetch(endpoint, key, params) {
+  const p = new URLSearchParams({ format:'json', key, domain:'', ...params });
+  const res = await fetch(`${NED}/${endpoint}?${p}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const j = await res.json();
+  if (j.error) throw new Error(j.error.msg || 'API 오류');
+  return j;
+}
+
+/* ═══════════ 전체 조회 ═══════════ */
+async function loadAll() {
+  ['land','house','apt'].forEach(id => {
+    document.getElementById(`body-${id}`).innerHTML =
+      `<div class="loading"><div class="spinner"></div><span>조회 중...</span></div>`;
+  });
+  document.getElementById('hist-section').innerHTML = '';
+
+  await Promise.all([
+    loadLand(),
+    loadHouse(),
+    loadApt(),
+  ]);
+
+  loadHistory();
+}
+
+/* ─── 1. 개별공시지가 ─── */
+async function loadLand() {
+  const el = document.getElementById('body-land');
+  try {
+    const j = await nedFetch('getIndvdLandPriceAttr', KEY_LAND, {
+      pnu: cur.pnu,
+      stdrYear: selYr,
+      numOfRows: 1,
+      pageNo: 1,
+    });
+    const items = j?.resultData?.items ?? j?.result?.items ?? [];
+    const it = Array.isArray(items) ? items[0] : items;
+
+    if (!it) {
+      el.innerHTML = `<div class="empty"><div class="ei">🌿</div><p>${selYr}년 개별공시지가<br>데이터가 없습니다.</p></div>`;
+      return;
+    }
+
+    const jiga = parseInt(it.jiga ?? it.pblntfPclnd ?? 0);
+    const pyeong = Math.round(jiga * 3.30579);
+    el.innerHTML = `
+      <div class="price-main" style="color:var(--green)">${jiga.toLocaleString()}<span style="font-size:14px;color:var(--muted);font-weight:400;margin-left:4px">원/㎡</span></div>
+      <div class="price-sub">평당 환산: ${pyeong.toLocaleString()}원/평</div>
+      <div class="kv-grid">
+        <div class="kv-item"><div class="kv-label">공시기준일</div><div class="kv-val">${selYr}.01.01</div></div>
+        <div class="kv-item"><div class="kv-label">지목</div><div class="kv-val">${it.lndcgrCodeNm||it.jimok||'—'}</div></div>
+        <div class="kv-item"><div class="kv-label">면적(㎡)</div><div class="kv-val mono">${it.lndpclAr ? Number(it.lndpclAr).toLocaleString() : '—'}</div></div>
+        <div class="kv-item"><div class="kv-label">비교표준지</div><div class="kv-val">${it.stndrdLandCd||'—'}</div></div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* ─── 2. 개별주택가격 ─── */
+async function loadHouse() {
+  const el = document.getElementById('body-house');
+  try {
+    const j = await nedFetch('getIndvHousPriceAttr', KEY_HOUSE, {
+      pnu: cur.pnu,
+      stdrYear: selYr,
+      numOfRows: 1,
+      pageNo: 1,
+    });
+    const items = j?.resultData?.items ?? j?.result?.items ?? [];
+    const it = Array.isArray(items) ? items[0] : items;
+
+    if (!it) {
+      el.innerHTML = `<div class="empty"><div class="ei">🏠</div><p>${selYr}년 개별주택가격<br>데이터가 없습니다.<br><span style="font-size:11px">공동주택이면 공동주택 탭 확인</span></p></div>`;
+      return;
+    }
+
+    const price = parseInt(it.housePc ?? it.pblntfPc ?? 0) * 10000;
+    el.innerHTML = `
+      <div class="price-main" style="color:var(--amber)">${fmtWon(price)}</div>
+      <div class="price-sub">${(price).toLocaleString()}원</div>
+      <div class="kv-grid">
+        <div class="kv-item"><div class="kv-label">공시기준일</div><div class="kv-val">${selYr}.01.01</div></div>
+        <div class="kv-item"><div class="kv-label">건물연면적</div><div class="kv-val">${it.totFlrAr ? Number(it.totFlrAr).toLocaleString()+'㎡' : '—'}</div></div>
+        <div class="kv-item"><div class="kv-label">건축년도</div><div class="kv-val">${it.bldYr||'—'}년</div></div>
+        <div class="kv-item"><div class="kv-label">주택유형</div><div class="kv-val">${it.houseType||'—'}</div></div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* ─── 3. 공동주택공시가격 ─── */
+async function loadApt() {
+  const el = document.getElementById('body-apt');
+  try {
+    const j = await nedFetch('getApartHousPriceAttr', KEY_APT, {
+      pnu: cur.pnu,
+      stdrYear: selYr,
+      numOfRows: 50,
+      pageNo: 1,
+    });
+    const items = j?.resultData?.items ?? j?.result?.items ?? [];
+    const list = Array.isArray(items) ? items : (items ? [items] : []);
+
+    if (!list.length) {
+      el.innerHTML = `<div class="empty"><div class="ei">🏢</div><p>${selYr}년 공동주택공시가격<br>데이터가 없습니다.<br><span style="font-size:11px">단독주택이면 개별주택가격 확인</span></p></div>`;
+      return;
+    }
+
+    if (list.length === 1) {
+      const it = list[0];
+      const price = parseInt(it.pblntfPc ?? 0) * 10000;
+      el.innerHTML = `
+        <div class="price-main" style="color:var(--blue)">${fmtWon(price)}</div>
+        <div class="price-sub">${price.toLocaleString()}원</div>
+        <div class="kv-grid">
+          <div class="kv-item"><div class="kv-label">공시기준일</div><div class="kv-val">${selYr}.01.01</div></div>
+          <div class="kv-item"><div class="kv-label">단지명</div><div class="kv-val">${it.kaptName||it.aptNm||'—'}</div></div>
+          <div class="kv-item"><div class="kv-label">동/호</div><div class="kv-val mono">${it.dongNm||'—'}동 ${it.hoNm||'—'}호</div></div>
+          <div class="kv-item"><div class="kv-label">전용면적</div><div class="kv-val">${it.prvuseAr ? Number(it.prvuseAr).toFixed(1)+'㎡' : '—'}</div></div>
+        </div>`;
+    } else {
+      // 여러 호 → 목록
+      const rows = list.slice(0,10).map(it => {
+        const price = parseInt(it.pblntfPc ?? 0) * 10000;
+        return `<tr>
+          <td class="mono">${it.dongNm||'—'}</td>
+          <td class="mono">${it.hoNm||'—'}</td>
+          <td>${it.prvuseAr ? Number(it.prvuseAr).toFixed(1)+'㎡' : '—'}</td>
+          <td style="font-weight:600;color:var(--blue)">${fmtWon(price)}</td>
+        </tr>`;
+      }).join('');
+      el.innerHTML = `<p style="font-size:11px;color:var(--muted);margin-bottom:8px">여러 호 검색됨 (${list.length}건, 최대 10건 표시)</p>
+        <div class="twrap"><table>
+          <thead><tr><th>동</th><th>호</th><th>면적</th><th>공시가격</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* ─── 연도별 개별공시지가 이력 ─── */
+async function loadHistory() {
+  const el = document.getElementById('hist-section');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div><span>연도별 이력 조회 중...</span></div>`;
+
+  try {
+    const results = await Promise.allSettled(YEARS.map(async y => {
+      const j = await nedFetch('getIndvdLandPriceAttr', KEY_LAND, { pnu:cur.pnu, stdrYear:y, numOfRows:1, pageNo:1 });
+      const items = j?.resultData?.items ?? j?.result?.items ?? [];
+      const it = Array.isArray(items) ? items[0] : items;
+      return { year:y, jiga: it ? parseInt(it.jiga ?? it.pblntfPclnd ?? 0) : null };
+    }));
+
+    const data = results.map((r,i) =>
+      r.status === 'fulfilled' ? r.value : { year:YEARS[i], jiga:null }
+    );
+
+    const jigas = data.map(d=>d.jiga).filter(v=>v>0);
+    const maxJ = jigas.length ? Math.max(...jigas) : 0;
+    const minJ = jigas.length ? Math.min(...jigas) : 0;
+
+    const rows = data.map((d,i) => {
+      const prev = data[i+1]?.jiga;
+      let change = '';
+      if (d.jiga && prev) {
+        const pct = ((d.jiga - prev)/prev*100).toFixed(1);
+        const up = d.jiga > prev;
+        change = `<span style="color:${up?'var(--green)':'var(--red)'};font-size:11px">${up?'▲':'▼'} ${Math.abs(pct)}%</span>`;
+      }
+      const isSelected = d.year === selYr;
+      const isMax = d.jiga === maxJ && jigas.length > 1;
+      const isMin = d.jiga === minJ && jigas.length > 1;
+      return `<tr${isSelected?' style="background:rgba(26,79,138,.05)"':''}>
+        <td class="mono" style="color:${isSelected?'var(--blue)':'inherit'};font-weight:${isSelected?'700':'400'}">${d.year}${isSelected?' ◀':''}</td>
+        <td class="mono" style="font-weight:600;color:${isMax?'var(--red)':isMin?'var(--blue)':'inherit'}">
+          ${d.jiga ? d.jiga.toLocaleString()+' 원/㎡' : '—'}${isMax?' 🔺':isMin?' 🔻':''}
+        </td>
+        <td class="mono">${d.jiga ? Math.round(d.jiga*3.30579).toLocaleString()+' 원/평' : '—'}</td>
+        <td>${change}</td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="hist-card">
+        <div class="hist-head">
+          <div class="hist-ttl">📊 연도별 개별공시지가 이력 <span class="tag tag-g">최근 ${YEARS.length}년</span></div>
+        </div>
+        <div class="twrap"><table>
+          <thead><tr><th>기준년도</th><th>공시지가 (원/㎡)</th><th>평당 환산</th><th>전년 대비</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ 이력 조회 오류: ${e.message}</div>`;
+  }
+}
+
+/* ═══════════ RESET ═══════════ */
+function resetAll() {
+  cur = null; selYr = CUR_YEAR;
+  document.getElementById('addrInput').value = '';
+  document.getElementById('addrResults').innerHTML = '';
+  document.getElementById('addrChip').style.display = 'none';
+  document.getElementById('main').innerHTML = `
+    <div class="hint"><div class="hi">🏘</div>
+    <p>위에서 <strong style="color:var(--ink)">주소를 검색</strong>하고 선택하면<br>
+    <strong style="color:var(--ink)">개별공시지가 · 개별주택가격 · 공동주택공시가격</strong>을<br>
+    연도별로 조회합니다.</p></div>`;
+}
+</script>
+</body>
+</html>
