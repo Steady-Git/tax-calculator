@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만나이 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf7f4;--surf:#fff;--card:#f5f0ea;--border:#e8e0d5;--border2:#d4c9bc;
+  --ink:#1a1612;--muted:#7a6e5e;--muted2:#a89d8c;
+  --blue:#2563eb;--blue-l:#eff6ff;
+  --green:#16a34a;--green-l:#f0fdf4;
+  --amber:#d97706;--amber-l:#fffbeb;
+  --red:#dc2626;--red-l:#fef2f2;
+  --violet:#7c3aed;--violet-l:#f5f3ff;
+  --rose:#e11d48;--rose-l:#fff1f2;
+  --mono:'IBM Plex Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+  --r:12px;--sh:0 4px 24px rgba(26,22,18,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;font-size:15px;line-height:1.7;
+  background-image:radial-gradient(ellipse at 20% 10%,rgba(124,58,237,.06),transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(225,29,72,.05),transparent 50%);}
+
+.page{max-width:700px;margin:0 auto;padding:48px 20px 80px;}
+
+/* HEADER */
+.hdr{text-align:center;margin-bottom:44px;}
+.hdr-icon-wrap{width:80px;height:80px;background:linear-gradient(135deg,#7c3aed,#e11d48);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px;box-shadow:0 8px 32px rgba(124,58,237,.3);}
+.hdr h1{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px;}
+.hdr p{font-size:14px;color:var(--muted);line-height:1.6;}
+
+/* MAIN CARD */
+.main-card{background:var(--surf);border:1.5px solid var(--border);border-radius:20px;padding:36px;box-shadow:var(--sh);margin-bottom:20px;}
+
+/* INPUTS */
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
+@media(max-width:500px){.input-grid{grid-template-columns:1fr;}}
+
+.field{display:flex;flex-direction:column;gap:8px;}
+.field-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;font-family:var(--mono);}
+.date-input{border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;font-family:var(--sans);font-size:15px;color:var(--ink);background:var(--card);outline:none;transition:all .2s;width:100%;}
+.date-input:focus{border-color:var(--violet);background:var(--surf);box-shadow:0 0 0 3px rgba(124,58,237,.1);}
+
+/* CALC BUTTON */
+.calc-btn{width:100%;padding:16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:-.2px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.calc-btn:hover{background:linear-gradient(135deg,#6d28d9,#5b21b6);transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,58,237,.3);}
+.calc-btn:active{transform:translateY(0);}
+
+/* TODAY SHORTCUT */
+.shortcut-wrap{display:flex;gap:8px;margin-top:10px;}
+.shortcut-btn{flex:1;padding:8px 12px;border:1.5px solid var(--border2);border-radius:8px;background:transparent;color:var(--muted);font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .15s;}
+.shortcut-btn:hover{border-color:var(--violet);color:var(--violet);}
+
+/* RESULT */
+.result-card{background:linear-gradient(135deg,var(--violet-l),var(--rose-l));border:1.5px solid rgba(124,58,237,.2);border-radius:20px;padding:36px;text-align:center;animation:pop .4s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--sh);}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+
+.age-display{margin-bottom:24px;}
+.age-label{font-size:13px;color:var(--violet);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;font-family:var(--mono);}
+.age-number{font-size:88px;font-weight:700;line-height:1;background:linear-gradient(135deg,#7c3aed,#e11d48);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;}
+.age-unit{font-size:20px;color:var(--ink);font-weight:600;}
+
+.age-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:440px){.age-detail{grid-template-columns:1fr 1fr;}}
+.detail-box{background:rgba(255,255,255,.6);backdrop-filter:blur(8px);border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:14px;}
+.detail-label{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px;}
+.detail-val{font-size:16px;font-weight:700;font-family:var(--mono);}
+
+/* BIRTHDAY COUNTDOWN */
+.birthday-next{background:rgba(255,255,255,.7);border:1.5px solid rgba(225,29,72,.2);border-radius:12px;padding:16px 20px;text-align:center;}
+.bd-label{font-size:12px;color:var(--rose);font-weight:600;margin-bottom:4px;}
+.bd-val{font-size:15px;font-weight:700;}
+
+/* EXTRA INFO */
+.extra-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+@media(max-width:440px){.extra-row{grid-template-columns:1fr;}}
+.extra-box{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.extra-label{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.extra-val{font-size:14px;font-weight:600;}
+
+/* LIFE PROGRESS */
+.progress-section{background:var(--surf);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-top:20px;box-shadow:var(--sh);}
+.progress-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.progress-item{margin-bottom:14px;}
+.progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.progress-name{font-size:13px;color:var(--muted);}
+.progress-pct{font-size:12px;font-weight:700;font-family:var(--mono);}
+.progress-bar{height:8px;background:var(--border);border-radius:20px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:20px;transition:width 1s ease;}
+
+/* EMPTY / HINT */
+.hint{text-align:center;padding:32px 20px;color:var(--muted);}
+.hint .ei{font-size:48px;margin-bottom:12px;}
+.hint p{font-size:14px;line-height:1.9;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div class="hdr-icon-wrap">🎂</div>
+    <h1>만나이 계산기</h1>
+    <p>생일과 기준일을 입력하면 만나이를 정확하게 계산합니다.<br>
+       2023년 6월부터 대한민국은 <strong>만나이</strong>가 법적 기준입니다.</p>
+  </div>
+
+  <!-- 입력 카드 -->
+  <div class="main-card">
+    <div class="input-grid">
+      <div class="field">
+        <label class="field-label">🎁 생년월일</label>
+        <input type="date" class="date-input" id="birthDate" onchange="calculate()">
+      </div>
+      <div class="field">
+        <label class="field-label">📅 기준일</label>
+        <input type="date" class="date-input" id="baseDate" onchange="calculate()">
+        <div class="shortcut-wrap">
+          <button class="shortcut-btn" onclick="setToday()">오늘로 설정</button>
+        </div>
+      </div>
+    </div>
+    <button class="calc-btn" onclick="calculate()">
+      🎂 만나이 계산하기
+    </button>
+  </div>
+
+  <!-- 결과 -->
+  <div id="result">
+    <div class="hint">
+      <div class="ei">🎈</div>
+      <p>생년월일과 기준일을 입력하면<br>만나이와 생일 정보를 알려드립니다.</p>
+    </div>
+  </div>
+
+</div>
+<script>
+/* 초기화 */
+window.addEventListener('load', () => {
+  document.getElementById('baseDate').value = new Date().toISOString().slice(0,10);
+});
+
+function setToday() {
+  document.getElementById('baseDate').value = new Date().toISOString().slice(0,10);
+  if (document.getElementById('birthDate').value) calculate();
+}
+
+/* ════════════════════════════
+   만나이 계산 핵심 로직
+   만나이 = 기준년도 - 생년
+            단, 기준일이 생일 이전이면 -1
+════════════════════════════ */
+function calculate() {
+  const birthStr = document.getElementById('birthDate').value;
+  const baseStr  = document.getElementById('baseDate').value;
+  if (!birthStr || !baseStr) return;
+
+  const birth = new Date(birthStr);
+  const base  = new Date(baseStr);
+
+  if (birth > base) {
+    document.getElementById('result').innerHTML =
+      `<div style="background:var(--red-l);border:1.5px solid rgba(220,38,38,.2);border-radius:12px;padding:16px 20px;color:var(--red);font-size:14px;">⚠️ 기준일이 생년월일보다 이전입니다.</div>`;
+    return;
+  }
+
+  // 만나이
+  let age = base.getFullYear() - birth.getFullYear();
+  const hadBirthday =
+    base.getMonth() > birth.getMonth() ||
+    (base.getMonth() === birth.getMonth() && base.getDate() >= birth.getDate());
+  if (!hadBirthday) age--;
+
+  // 생일까지 남은 날
+  const thisYearBirth = new Date(base.getFullYear(), birth.getMonth(), birth.getDate());
+  let nextBirth;
+  if (thisYearBirth >= base) {
+    nextBirth = thisYearBirth;
+  } else {
+    nextBirth = new Date(base.getFullYear()+1, birth.getMonth(), birth.getDate());
+  }
+  const daysToNext = Math.ceil((nextBirth - base) / 86400000);
+
+  // 총 살아온 날·월
+  const totalDays   = Math.floor((base - birth) / 86400000);
+  const totalMonths = (base.getFullYear()-birth.getFullYear())*12 + (base.getMonth()-birth.getMonth())
+                    - (base.getDate()<birth.getDate()?1:0);
+  const totalHours  = totalDays * 24;
+  const totalWeeks  = Math.floor(totalDays / 7);
+
+  // 이번 생일 여부
+  const isBirthday = base.getMonth()===birth.getMonth() && base.getDate()===birth.getDate();
+
+  // 띠·별자리
+  const zodiac12 = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+  const띠 = zodiac12[(birth.getFullYear()-4)%12];
+  const starSigns = [
+    {name:'염소자리',m:1,d:20},{name:'물병자리',m:2,d:19},{name:'물고기자리',m:3,d:20},
+    {name:'양자리',m:4,d:20},{name:'황소자리',m:5,d:21},{name:'쌍둥이자리',m:6,d:21},
+    {name:'게자리',m:7,d:23},{name:'사자자리',m:8,d:23},{name:'처녀자리',m:9,d:23},
+    {name:'천칭자리',m:10,d:23},{name:'전갈자리',m:11,d:22},{name:'사수자리',m:12,d:22},
+  ];
+  const bm=birth.getMonth()+1, bd=birth.getDate();
+  let star='염소자리';
+  for(const s of starSigns){ if(bm<s.m||(bm===s.m&&bd<s.d)){star=s.name;break;} }
+
+  // 한국식 나이 (세는나이)
+  const koreanAge = base.getFullYear() - birth.getFullYear() + 1;
+  // 연나이
+  const yearAge = base.getFullYear() - birth.getFullYear();
+
+  // 인생 진행률 (기대수명 83세 기준)
+  const lifeExpect  = 83;
+  const lifePct     = Math.min(100, (age/lifeExpect*100)).toFixed(1);
+  const childPct    = Math.min(100, (age/18*100)).toFixed(1);
+  const retirePct   = Math.min(100, (age/65*100)).toFixed(1);
+
+  // 생일 요일
+  const weekdays = ['일','월','화','수','목','금','토'];
+  const birthWeekday = weekdays[birth.getDay()];
+  const baseWeekday  = weekdays[base.getDay()];
+
+  document.getElementById('result').innerHTML = `
+    <div class="result-card">
+      ${isBirthday ? '<div style="font-size:13px;color:var(--rose);font-weight:700;margin-bottom:16px;letter-spacing:1px">🎉 오늘이 생일이에요! 생일 축하드립니다! 🎉</div>' : ''}
+      <div class="age-display">
+        <div class="age-label">만 나이</div>
+        <div class="age-number">${age}</div>
+        <div class="age-unit">세</div>
+      </div>
+
+      <div class="age-detail">
+        <div class="detail-box">
+          <div class="detail-label">총 개월수</div>
+          <div class="detail-val" style="color:var(--violet)">${totalMonths.toLocaleString()}<span style="font-size:12px;font-weight:400"> 개월</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">총 일수</div>
+          <div class="detail-val" style="color:var(--violet)">${totalDays.toLocaleString()}<span style="font-size:12px;font-weight:400"> 일</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">총 시간</div>
+          <div class="detail-val" style="color:var(--violet)">${totalHours.toLocaleString()}<span style="font-size:12px;font-weight:400"> 시간</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">총 주수</div>
+          <div class="detail-val" style="color:var(--violet)">${totalWeeks.toLocaleString()}<span style="font-size:12px;font-weight:400"> 주</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">한국식(세는) 나이</div>
+          <div class="detail-val">${koreanAge}<span style="font-size:12px;font-weight:400"> 세</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-label">연 나이</div>
+          <div class="detail-val">${yearAge}<span style="font-size:12px;font-weight:400"> 세</span></div>
+        </div>
+      </div>
+
+      <div class="birthday-next">
+        <div class="bd-label">🎂 ${isBirthday?'오늘이 생일':'다음 생일까지'}</div>
+        <div class="bd-val">${isBirthday?'생일 축하합니다! 🎉':`${daysToNext}일 남았습니다 (${nextBirth.toLocaleDateString('ko-KR')})`}</div>
+      </div>
+    </div>
+
+    <div class="extra-row">
+      <div class="extra-box">
+        <div class="extra-label">📅 생년월일</div>
+        <div class="extra-val">${birth.toLocaleDateString('ko-KR')} (${birthWeekday}요일)</div>
+      </div>
+      <div class="extra-box">
+        <div class="extra-label">📅 기준일</div>
+        <div class="extra-val">${base.toLocaleDateString('ko-KR')} (${baseWeekday}요일)</div>
+      </div>
+      <div class="extra-box">
+        <div class="extra-label">🐉 띠</div>
+        <div class="extra-val">${birth.getFullYear()}년 · ${띠}띠</div>
+      </div>
+      <div class="extra-box">
+        <div class="extra-label">⭐ 별자리</div>
+        <div class="extra-val">${star}</div>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-title">📊 인생 진행률</div>
+      ${[
+        {label:`성인(18세) 기준`, pct:childPct, color:'#7c3aed'},
+        {label:`은퇴(65세) 기준`, pct:retirePct, color:'#e11d48'},
+        {label:`기대수명(83세) 기준`, pct:lifePct, color:'#2563eb'},
+      ].map(item=>`
+        <div class="progress-item">
+          <div class="progress-row">
+            <span class="progress-name">${item.label}</span>
+            <span class="progress-pct" style="color:${item.color}">${item.pct}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${item.pct}%;background:${item.color}"></div>
+          </div>
+        </div>`).join('')}
+      <div style="font-size:11px;color:var(--muted2);margin-top:8px;text-align:right">※ 통계청 기준 기대수명 83세 적용</div>
+    </div>`;
+}
+</script>
+</body>
+</html>

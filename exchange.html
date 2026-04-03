@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환율 조회</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--surf:#161b22;--card:#1c2333;--border:#21262d;--border2:#30363d;
+  --txt:#e6edf3;--muted:#7d8590;--muted2:#484f58;
+  --blue:#58a6ff;--blue-d:#1f6feb;--blue-l:rgba(88,166,255,.12);
+  --green:#3fb950;--green-l:rgba(63,185,80,.12);
+  --red:#f85149;--red-l:rgba(248,81,73,.12);
+  --amber:#e3b341;--amber-l:rgba(227,179,65,.12);
+  --violet:#a371f7;--violet-l:rgba(163,113,247,.12);
+  --mono:'IBM Plex Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+  --r:8px;--sh:0 4px 20px rgba(0,0,0,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;font-size:14px;line-height:1.6;}
+
+/* grid bg */
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(88,166,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(88,166,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;}
+
+.page{max-width:1100px;margin:0 auto;padding:40px 20px 80px;position:relative;z-index:1;}
+
+/* HEADER */
+.hdr{margin-bottom:36px;}
+.hdr h1{font-size:28px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.hdr-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--blue-d),#0d4a8a);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(88,166,255,.3);}
+.hdr p{font-size:12px;color:var(--muted);font-family:var(--mono);}
+
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--surf);border:1px solid var(--border2);border-radius:10px;padding:4px;margin-bottom:28px;width:fit-content;}
+.tab{padding:9px 22px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .15s;font-family:var(--sans);}
+.tab:hover{color:var(--txt);}
+.tab.active{background:var(--blue-d);color:#fff;font-weight:600;}
+
+/* PANEL */
+.panel{display:none;}.panel.active{display:block;}
+
+/* SECTION CARDS */
+.sec-card{background:var(--surf);border:1px solid var(--border2);border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:var(--sh);}
+
+/* TODAY CURRENCY CARDS */
+.currency-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:18px;}
+.cur-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;transition:all .2s;cursor:default;}
+.cur-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(88,166,255,.15);}
+.cur-name{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:4px;}
+.cur-code{font-size:14px;font-weight:700;margin-bottom:8px;}
+.cur-rate{font-size:22px;font-weight:700;color:var(--blue);font-family:var(--mono);}
+.cur-unit{font-size:11px;color:var(--muted);margin-top:3px;}
+.cur-change{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;margin-top:6px;}
+.up{background:var(--red-l);color:var(--red);}
+.dn{background:var(--green-l);color:var(--green);}
+.nc{background:var(--muted2);color:var(--muted);}
+
+/* FORM CONTROLS */
+.form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px;}
+.form-input{background:var(--card);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--sans);font-size:14px;color:var(--txt);outline:none;transition:border-color .15s;}
+.form-input:focus{border-color:var(--blue);}
+.form-select{background:var(--card);border:1.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-family:var(--sans);font-size:14px;color:var(--txt);outline:none;cursor:pointer;}
+.form-select:focus{border-color:var(--blue);}
+.search-btn{padding:11px 22px;background:var(--blue-d);color:#fff;border:none;border-radius:var(--r);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.search-btn:hover{background:#2f81f7;}
+.search-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* RESULT TABLE */
+.rtable-wrap{overflow-x:auto;margin-top:16px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--card);padding:10px 14px;text-align:left;font-size:10px;font-family:var(--mono);color:var(--muted);border-bottom:1.5px solid var(--border2);white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(88,166,255,.04);}
+.mono{font-family:var(--mono);font-size:12px;}
+.rate-num{font-weight:700;color:var(--blue);font-family:var(--mono);}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;}
+.stat-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;flex:1;min-width:120px;}
+.stat-label{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:5px;}
+.stat-val{font-size:18px;font-weight:700;font-family:var(--mono);}
+
+/* CHART */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;}
+.chart-title{font-size:13px;font-weight:600;margin-bottom:16px;color:var(--muted);}
+
+/* LOADING */
+.loading{display:flex;align-items:center;gap:12px;padding:32px 20px;color:var(--muted);font-family:var(--mono);font-size:12px;}
+.spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty .ei{font-size:36px;margin-bottom:12px;}
+.empty p{font-size:13px;line-height:1.9;}
+.errbox{background:var(--red-l);border:1px solid rgba(248,81,73,.25);border-radius:var(--r);padding:14px 16px;color:var(--red);font-size:13px;margin-top:12px;}
+.info-box{background:var(--amber-l);border:1px solid rgba(227,179,65,.25);border-radius:var(--r);padding:10px 14px;color:var(--amber);font-size:12px;margin-bottom:16px;}
+
+/* UPDATE TIME */
+.update-badge{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--card);border:1px solid var(--border2);padding:5px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+
+/* PERIOD TABLE with date */
+.date-col{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.anim{animation:fu .3s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:640px){.tabs{width:100%;}.tab{flex:1;text-align:center;padding:9px 10px;}.currency-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <h1><div class="hdr-icon">💱</div> 환율 조회</h1>
+    <p>한국수출입은행 현재환율 API · oapi.koreaexim.go.kr</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('today',this)">📅 오늘 환율</button>
+    <button class="tab" onclick="switchTab('single',this)">🗓 특정 날짜</button>
+    <button class="tab" onclick="switchTab('period',this)">📈 기간 조회</button>
+  </div>
+
+  <!-- ── TAB 1: 오늘 환율 ── -->
+  <div class="panel active" id="tab-today">
+    <div class="sec-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:4px;">오늘의 환율</div>
+          <div id="todayDate" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="update-badge"><span class="dot"></span>기준: 매영업일 11시 이후</div>
+          <div style="display:flex;gap:8px;">
+            <select class="form-select" id="todayCurFilter" onchange="filterToday()" style="font-size:12px;padding:6px 10px;">
+              <option value="">전체 통화</option>
+              <option value="USD">USD (미국 달러)</option>
+              <option value="EUR">EUR (유로)</option>
+              <option value="JPY">JPY (일본 엔)</option>
+              <option value="CNH">CNH (중국 위안)</option>
+              <option value="GBP">GBP (영국 파운드)</option>
+              <option value="HKD">HKD (홍콩 달러)</option>
+              <option value="AUD">AUD (호주 달러)</option>
+              <option value="CAD">CAD (캐나다 달러)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="todayResult"><div class="loading"><div class="spinner"></div><span>환율 정보 불러오는 중...</span></div></div>
+    </div>
+  </div>
+
+  <!-- ── TAB 2: 특정 날짜 ── -->
+  <div class="panel" id="tab-single">
+    <div class="sec-card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:16px;">특정 날짜 환율 조회</div>
+      <div class="info-box">⚠️ 한국수출입은행 API는 영업일 기준 데이터를 제공합니다. 주말·공휴일에는 이전 영업일 데이터를 조회해주세요.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">조회 날짜</label>
+          <input type="date" class="form-input" id="singleDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">통화 선택</label>
+          <select class="form-select" id="singleCur">
+            <option value="">전체</option>
+            <option value="USD">USD (미국 달러)</option>
+            <option value="EUR">EUR (유로)</option>
+            <option value="JPY">JPY (일본 엔)</option>
+            <option value="CNH">CNH (중국 위안)</option>
+            <option value="GBP">GBP (영국 파운드)</option>
+            <option value="HKD">HKD (홍콩 달러)</option>
+            <option value="AUD">AUD (호주 달러)</option>
+            <option value="CAD">CAD (캐나다 달러)</option>
+          </select>
+        </div>
+        <button class="search-btn" onclick="fetchSingle()">조회</button>
+      </div>
+      <div id="singleResult">
+        <div class="empty"><div class="ei">🗓</div><p>날짜를 선택하고 조회 버튼을 누르세요.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 3: 기간 조회 ── -->
+  <div class="panel" id="tab-period">
+    <div class="sec-card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:16px;">기간별 환율 조회</div>
+      <div class="info-box">📌 영업일 기준으로 조회됩니다. 최대 30일 조회를 권장합니다 (일일 호출 제한 1,000회).</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">시작 날짜</label>
+          <input type="date" class="form-input" id="periodFrom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">종료 날짜</label>
+          <input type="date" class="form-input" id="periodTo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">통화 선택</label>
+          <select class="form-select" id="periodCur">
+            <option value="USD">USD (미국 달러)</option>
+            <option value="EUR">EUR (유로)</option>
+            <option value="JPY">JPY (일본 엔)</option>
+            <option value="CNH">CNH (중국 위안)</option>
+            <option value="GBP">GBP (영국 파운드)</option>
+            <option value="HKD">HKD (홍콩 달러)</option>
+            <option value="AUD">AUD (호주 달러)</option>
+            <option value="CAD">CAD (캐나다 달러)</option>
+          </select>
+        </div>
+        <button class="search-btn" id="periodBtn" onclick="fetchPeriod()">조회</button>
+      </div>
+      <div id="periodResult">
+        <div class="empty"><div class="ei">📈</div><p>기간을 선택하고 통화를 골라 조회하세요.<br>환율 변동 그래프와 평균 환율을 확인할 수 있습니다.</p></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const AUTH_KEY = "2Z44pEKoHIxcXfxlHcA3MJTLBRAhK3aX";
+const API_BASE = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON";
+
+let todayAllData = [];
+let periodChart  = null;
+
+/* ── 유틸 ── */
+function toYMD(d) {
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+function fmtDate(ymd) {
+  return `${ymd.slice(0,4)}.${ymd.slice(4,6)}.${ymd.slice(6,8)}`;
+}
+function todayYMD() { return toYMD(new Date()); }
+function prevBizDay() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  while([0,6].includes(d.getDay())) d.setDate(d.getDate()-1);
+  return toYMD(d);
+}
+function dateRange(fromStr, toStr) {
+  const dates=[], cur=new Date(fromStr);
+  const end=new Date(toStr);
+  while(cur<=end){ dates.push(toYMD(new Date(cur))); cur.setDate(cur.getDate()+1); }
+  return dates;
+}
+function isBizDay(dateStr) {
+  const d=new Date(dateStr);
+  return d.getDay()!==0 && d.getDay()!==6;
+}
+
+/* ── API 호출 ── */
+async function fetchRate(ymd) {
+  const url = `${API_BASE}?authkey=${AUTH_KEY}&searchdate=${ymd}&data=AP01`;
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length===0) return [];
+  return data;
+}
+
+/* ── 탭 전환 ── */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+/* ══════════════════════════
+   TAB 1: 오늘 환율
+══════════════════════════ */
+function filterToday() {
+  const filter = document.getElementById('todayCurFilter').value;
+  renderTodayCards(filter ? todayAllData.filter(d=>d.cur_unit===filter) : todayAllData);
+}
+
+function renderTodayCards(data) {
+  if (!data.length) {
+    document.getElementById('todayResult').innerHTML =
+      `<div class="errbox">데이터가 없습니다. 영업일이 아니거나 API 미응답 상태입니다.</div>`;
+    return;
+  }
+  const html = `<div class="currency-grid anim">${data.map(it => {
+    const rate = parseFloat((it.deal_bas_r||'0').replace(/,/g,''));
+    const unit = it.cur_unit;
+    // 등락 표시 (ttb vs tts 차이로 개략 추정)
+    const buy  = parseFloat((it.ttb||'0').replace(/,/g,''));
+    const sell = parseFloat((it.tts||'0').replace(/,/g,''));
+    const spread = sell - buy;
+    return `<div class="cur-card">
+      <div class="cur-name">${it.cur_nm}</div>
+      <div class="cur-code">${unit}</div>
+      <div class="cur-rate">${Number(rate).toLocaleString('ko-KR',{minimumFractionDigits:2})}</div>
+      <div class="cur-unit">기준환율 (원/${unit})</div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">살때: ${Number(sell).toLocaleString()}</span>
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">팔때: ${Number(buy).toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+  document.getElementById('todayResult').innerHTML = html;
+}
+
+async function loadToday() {
+  document.getElementById('todayResult').innerHTML =
+    `<div class="loading"><div class="spinner"></div><span>환율 불러오는 중...</span></div>`;
+
+  // 오늘 먼저 시도 → 없으면 전날
+  let ymd = todayYMD();
+  let data = [];
+  try { data = await fetchRate(ymd); } catch(e){}
+  if (!data.length) { ymd = prevBizDay(); try { data = await fetchRate(ymd); } catch(e){} }
+
+  document.getElementById('todayDate').textContent =
+    `기준일: ${fmtDate(ymd)} (한국수출입은행 고시환율)`;
+
+  todayAllData = data.filter(d => d.result===1);
+  filterToday();
+}
+
+/* ══════════════════════════
+   TAB 2: 특정 날짜
+══════════════════════════ */
+async function fetchSingle() {
+  const raw = document.getElementById('singleDate').value;
+  if (!raw) { alert('날짜를 선택하세요.'); return; }
+  const ymd = raw.replace(/-/g,'');
+  const curFilter = document.getElementById('singleCur').value;
+  const el = document.getElementById('singleResult');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div><span>조회 중...</span></div>`;
+
+  try {
+    let data = await fetchRate(ymd);
+    data = data.filter(d=>d.result===1);
+    if (!data.length) {
+      el.innerHTML = `<div class="errbox">⚠️ ${fmtDate(ymd)} 데이터가 없습니다. 주말·공휴일·데이터 미제공일 가능성이 있습니다.</div>`;
+      return;
+    }
+    if (curFilter) data = data.filter(d=>d.cur_unit===curFilter);
+
+    const rows = data.map(it=>{
+      const rate = parseFloat((it.deal_bas_r||'0').replace(/,/g,''));
+      return `<tr>
+        <td><b>${it.cur_unit}</b></td>
+        <td style="color:var(--muted);font-size:12px">${it.cur_nm}</td>
+        <td class="rate-num">${Number(rate).toLocaleString('ko-KR',{minimumFractionDigits:2})} 원</td>
+        <td class="mono">${it.ttb||'—'}</td>
+        <td class="mono">${it.tts||'—'}</td>
+        <td class="mono">${it.ten_dd_efee_r||'—'}</td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="anim">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;font-family:var(--mono)">📅 ${fmtDate(ymd)} 기준 — ${data.length}개 통화</div>
+        <div class="rtable-wrap">
+          <table>
+            <thead><tr><th>통화</th><th>국가</th><th>기준환율</th><th>살 때(TTB)</th><th>팔 때(TTS)</th><th>10일환가료율</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ 오류: ${e.message}</div>`;
+  }
+}
+
+/* ══════════════════════════
+   TAB 3: 기간 조회
+══════════════════════════ */
+async function fetchPeriod() {
+  const fromRaw = document.getElementById('periodFrom').value;
+  const toRaw   = document.getElementById('periodTo').value;
+  const cur     = document.getElementById('periodCur').value;
+
+  if (!fromRaw||!toRaw) { alert('시작·종료 날짜를 모두 선택하세요.'); return; }
+  if (fromRaw > toRaw)  { alert('시작 날짜가 종료 날짜보다 늦습니다.'); return; }
+
+  const dates = dateRange(fromRaw, toRaw).filter(isBizDay);
+  if (dates.length > 40) { alert('조회 기간이 너무 깁니다. 40영업일 이내로 설정해주세요.'); return; }
+
+  const btn = document.getElementById('periodBtn');
+  btn.disabled=true; btn.textContent='조회 중...';
+  const el = document.getElementById('periodResult');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div><span>총 ${dates.length}일 데이터 조회 중...</span></div>`;
+
+  try {
+    // 날짜별 병렬 조회
+    const results = await Promise.all(dates.map(async ymd => {
+      try {
+        const data = await fetchRate(ymd);
+        const hit  = data.find(d=>d.result===1&&d.cur_unit===cur);
+        return { ymd, rate: hit ? parseFloat((hit.deal_bas_r||'0').replace(/,/g,'')) : null };
+      } catch { return { ymd, rate: null }; }
+    }));
+
+    const valid = results.filter(r=>r.rate!==null&&r.rate>0);
+    if (!valid.length) {
+      el.innerHTML = `<div class="errbox">⚠️ 해당 기간에 ${cur} 데이터가 없습니다.</div>`;
+      return;
+    }
+
+    const rates  = valid.map(r=>r.rate);
+    const avg    = rates.reduce((a,b)=>a+b,0)/rates.length;
+    const maxR   = Math.max(...rates);
+    const minR   = Math.min(...rates);
+    const maxD   = valid[rates.indexOf(maxR)].ymd;
+    const minD   = valid[rates.indexOf(minR)].ymd;
+    const change = rates[rates.length-1] - rates[0];
+    const changePct = (change / rates[0] * 100).toFixed(2);
+
+    // STATS
+    const statsHtml = `
+      <div class="stats-bar anim">
+        <div class="stat-item"><div class="stat-label">평균 환율</div><div class="stat-val" style="color:var(--blue)">${avg.toFixed(2)}<span style="font-size:12px;color:var(--muted)"> 원</span></div></div>
+        <div class="stat-item"><div class="stat-label">최고 환율</div><div class="stat-val" style="color:var(--red)">${maxR.toLocaleString()}<span style="font-size:12px;color:var(--muted)"> 원</span></div><div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${fmtDate(maxD)}</div></div>
+        <div class="stat-item"><div class="stat-label">최저 환율</div><div class="stat-val" style="color:var(--green)">${minR.toLocaleString()}<span style="font-size:12px;color:var(--muted)"> 원</span></div><div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${fmtDate(minD)}</div></div>
+        <div class="stat-item"><div class="stat-label">기간 변동</div><div class="stat-val" style="color:${change>=0?'var(--red)':'var(--green)'}">${change>=0?'+':''}${change.toFixed(2)}<span style="font-size:12px;color:var(--muted)"> 원</span></div><div style="font-size:10px;font-family:var(--mono);color:${change>=0?'var(--red)':'var(--green)'}">  (${change>=0?'▲':'▼'} ${Math.abs(changePct)}%)</div></div>
+        <div class="stat-item"><div class="stat-label">조회 영업일수</div><div class="stat-val">${valid.length}<span style="font-size:12px;color:var(--muted)"> 일</span></div></div>
+      </div>`;
+
+    // CHART
+    const chartHtml = `
+      <div class="chart-wrap anim">
+        <div class="chart-title">📈 ${cur}/KRW 환율 변동 추이 (${fmtDate(valid[0].ymd)} ~ ${fmtDate(valid[valid.length-1].ymd)})</div>
+        <canvas id="rateChart" height="80"></canvas>
+      </div>`;
+
+    // TABLE
+    const tableRows = valid.map(r=>{
+      const prev = valid[valid.indexOf(r)-1]?.rate;
+      const diff = prev ? r.rate - prev : 0;
+      const diffStr = prev ? (diff>=0?'+':'')+diff.toFixed(2) : '—';
+      const diffColor = diff>0?'var(--red)':diff<0?'var(--green)':'var(--muted)';
+      return `<tr>
+        <td class="date-col">${fmtDate(r.ymd)}</td>
+        <td class="rate-num">${r.rate.toLocaleString('ko-KR',{minimumFractionDigits:2})}</td>
+        <td style="color:${diffColor};font-family:var(--mono);font-size:12px">${diffStr}</td>
+      </tr>`;
+    }).join('');
+
+    const tableHtml = `
+      <div class="rtable-wrap anim" style="max-height:300px;overflow-y:auto;">
+        <table>
+          <thead><tr><th>날짜</th><th>환율 (원/${cur})</th><th>전일 대비</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>`;
+
+    el.innerHTML = statsHtml + chartHtml + '<div style="margin-top:16px"></div>' + tableHtml;
+
+    // Chart.js 그래프 그리기
+    if (periodChart) periodChart.destroy();
+    const ctx = document.getElementById('rateChart').getContext('2d');
+    periodChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: valid.map(r => fmtDate(r.ymd)),
+        datasets: [{
+          label: `${cur}/KRW`,
+          data: valid.map(r=>r.rate),
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88,166,255,.08)',
+          borderWidth: 2,
+          pointRadius: valid.length <= 15 ? 4 : 2,
+          pointBackgroundColor: '#58a6ff',
+          fill: true,
+          tension: 0.3,
+        },{
+          label: '평균',
+          data: Array(valid.length).fill(avg),
+          borderColor: 'rgba(227,179,65,.6)',
+          borderWidth: 1.5,
+          borderDash: [6,3],
+          pointRadius: 0,
+          fill: false,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color:'#7d8590', font:{size:11} } },
+          tooltip: {
+            backgroundColor:'#161b22',
+            borderColor:'#30363d',
+            borderWidth:1,
+            titleColor:'#e6edf3',
+            bodyColor:'#7d8590',
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString('ko-KR',{minimumFractionDigits:2})} 원`
+            }
+          }
+        },
+        scales: {
+          x: { ticks:{color:'#7d8590',font:{size:10},maxTicksLimit:10}, grid:{color:'rgba(48,54,61,.5)'} },
+          y: { ticks:{color:'#7d8590',font:{size:10,family:'IBM Plex Mono'},callback:v=>v.toLocaleString()}, grid:{color:'rgba(48,54,61,.5)'} },
+        },
+      },
+    });
+
+  } catch(e) {
+    el.innerHTML = `<div class="errbox">⚠️ 오류: ${e.message}</div>`;
+  } finally {
+    btn.disabled=false; btn.textContent='조회';
+  }
+}
+
+/* ── 초기화 ── */
+window.addEventListener('load', () => {
+  // 날짜 기본값 설정
+  const today = new Date().toISOString().slice(0,10);
+  const month = new Date(); month.setDate(month.getDate()-30);
+  const monthAgo = month.toISOString().slice(0,10);
+
+  document.getElementById('singleDate').value = today;
+  document.getElementById('periodFrom').value = monthAgo;
+  document.getElementById('periodTo').value   = today;
+
+  loadToday();
+});
+</script>
+</body>
+</html>
