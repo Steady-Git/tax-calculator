@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>국민연금 가입 사업장 조회</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --white: #ffffff;
+    --surface: #f7f9fc;
+    --ink: #0f1f3d;
+    --ink2: #1e3a6e;
+    --muted: #6b7fa3;
+    --rule: #d8e2f0;
+    --rule2: #c3d0e8;
+    --blue: #1b4fd8;
+    --blue2: #2563eb;
+    --teal: #0d9488;
+    --amber: #d97706;
+    --red: #dc2626;
+    --green: #16a34a;
+    --accent: #1b4fd8;
+    --shadow: 0 1px 3px rgba(15,31,61,.08), 0 4px 16px rgba(15,31,61,.06);
+    --shadow-lg: 0 4px 6px rgba(15,31,61,.05), 0 10px 40px rgba(15,31,61,.1);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Top stripe */
+  .topbar {
+    background: linear-gradient(90deg, #0f1f3d 0%, #1b4fd8 60%, #0d9488 100%);
+    height: 4px;
+  }
+
+  /* Header */
+  .site-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 24px;
+    box-shadow: 0 1px 4px rgba(15,31,61,.06);
+  }
+
+  .header-inner {
+    max-width: 1020px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--blue);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .logo-text { line-height: 1.3; }
+  .logo-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+  .header-badge {
+    font-size: 11px;
+    background: #eff6ff;
+    color: var(--blue);
+    border: 1px solid #bfdbfe;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+
+  /* Main layout */
+  .main {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 28px;
+  }
+
+  .hero h1 {
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 900;
+    color: var(--ink);
+    letter-spacing: -1px;
+    line-height: 1.25;
+  }
+
+  .hero h1 span { color: var(--blue2); }
+
+  .hero p {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .notice-strip {
+    margin-top: 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--amber);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.6;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all .2s;
+    text-align: center;
+  }
+
+  .tab:hover { background: var(--surface); color: var(--ink); }
+
+  .tab.active {
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(27,79,216,.3);
+  }
+
+  /* Search card */
+  .search-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.wide { grid-column: span 2; }
+
+  label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink2);
+    letter-spacing: .5px;
+  }
+
+  input, select {
+    background: var(--surface);
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--blue2);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+
+  input::placeholder { color: var(--muted); font-size: 12px; }
+
+  select { cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7fa3' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all .2s;
+    box-shadow: 0 2px 8px rgba(27,79,216,.25);
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover { background: var(--blue2); box-shadow: 0 4px 16px rgba(27,79,216,.35); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .btn-reset {
+    background: transparent;
+    border: 1.5px solid var(--rule2);
+    color: var(--muted);
+    border-radius: 9px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all .15s;
+  }
+
+  .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 60px 20px; }
+  .loading.show { display: block; }
+
+  .spin {
+    width: 32px; height: 32px;
+    border: 3px solid var(--rule);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    margin: 0 auto 14px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .err {
+    display: none;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 20px;
+  }
+  .err.show { display: flex; gap: 8px; align-items: flex-start; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: .3px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--ink);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-value.blue { color: var(--blue2); }
+  .stat-value.teal { color: var(--teal); }
+  .stat-value.amber { color: var(--amber); }
+
+  .stat-unit { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 2px; }
+
+  /* Result card */
+  .result-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 20px;
+    animation: fadeUp .3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .card-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+
+  .card-title { font-size: 13px; font-weight: 700; color: var(--ink2); }
+  .card-meta { font-size: 12px; color: var(--muted); }
+
+  /* Detail layout */
+  .detail-header {
+    background: linear-gradient(135deg, var(--ink2) 0%, var(--blue) 100%);
+    color: #fff;
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .detail-name { font-size: 22px; font-weight: 900; letter-spacing: -.5px; }
+  .detail-num {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px; opacity: .7;
+    margin-top: 5px; letter-spacing: 1px;
+  }
+
+  .status-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .3px;
+  }
+
+  .badge-active { background: rgba(22,163,74,.2); color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+  .badge-type { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+  .badge-region { background: rgba(13,148,136,.2); color: #5eead4; border: 1px solid rgba(94,234,212,.3); }
+
+  .info-section { border-bottom: 1px solid var(--rule); }
+
+  .info-section-label {
+    padding: 10px 20px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--blue);
+    background: #f0f4ff;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .info-item {
+    padding: 14px 20px;
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .info-item:nth-child(4n) { border-right: none; }
+
+  .info-lbl {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .info-val {
+    font-size: 14px; font-weight: 600;
+    color: var(--ink);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: -.3px;
+  }
+
+  .info-val.ko { font-family: 'Noto Sans KR', sans-serif; letter-spacing: 0; }
+  .info-val.hl { color: var(--blue2); }
+  .info-val.teal { color: var(--teal); }
+  .info-val.amber { color: var(--amber); }
+
+  /* Table */
+  .tbl-wrap { overflow-x: auto; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:760px; }
+
+  th {
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .8px; text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f5f8ff; cursor: pointer; }
+
+  .td-name { font-weight: 700; color: var(--ink2); white-space: normal; min-width: 150px; }
+  .td-mono { font-family: 'Roboto Mono', monospace; font-size: 12px; letter-spacing: .3px; }
+  .td-hl { color: var(--blue2); font-weight: 700; }
+  .td-teal { color: var(--teal); }
+  .td-num { font-family: 'Roboto Mono', monospace; text-align: right; }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .3px;
+  }
+
+  .pill-corp { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+  .pill-ind  { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .pill-etc  { background: #f9fafb; color: var(--muted); border: 1px solid var(--rule); }
+
+  /* Pagination */
+  .pg {
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px; padding: 16px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .pg-btn {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-size: 13px; cursor: pointer;
+    transition: all .15s;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 600;
+  }
+
+  .pg-btn:hover, .pg-btn.active {
+    background: var(--blue); border-color: var(--blue);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(27,79,216,.25);
+  }
+
+  .pg-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+  .strip {
+    display: flex; justify-content: space-between;
+    padding: 10px 18px;
+    font-size: 12px; color: var(--muted);
+    border-top: 1px solid var(--rule);
+    background: var(--surface);
+  }
+
+  .strip strong { color: var(--blue2); }
+
+  @media(max-width:640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .field.wide { grid-column: 1; }
+    .btn-row { flex-wrap: wrap; }
+    .detail-header { flex-direction: column; }
+    .info-item:nth-child(4n) { border-right: 1px solid var(--rule); }
+    .info-item:nth-child(2n) { border-right: none; }
+    .tab { font-size: 12px; padding: 9px 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🏛</div>
+      <div class="logo-text">
+        <div class="logo-title">국민연금 가입사업장 조회</div>
+        <div class="logo-sub">국민연금공단 Open API · B552015</div>
+      </div>
+    </div>
+    <div class="header-badge">자동승인 · REST</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="hero">
+    <h1>국민연금 가입 사업장<br><span>현황 조회 시스템</span></h1>
+    <p>법정동단위 지역별 국민연금 가입 사업장 정보를 조회합니다.</p>
+    <div class="notice-strip">
+      <span>ℹ️</span>
+      <span>제공범위: <b>가입자 3인 이상 법인사업장</b>, <b>10인 이상 개인사업장</b> (2025.7 이후 기준) · 당월고지금액은 기준소득월액 상한액 적용으로 실제소득과 상이할 수 있음</span>
+    </div>
+  </div>
+
+  <!-- Tab -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="setTab('list',this)">🔍 사업장 목록 조회</button>
+    <button class="tab" onclick="setTab('detail',this)">📋 사업장 상세 조회</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <div class="section-label">검색 조건</div>
+
+    <!-- List search fields -->
+    <div id="listFields">
+      <div class="form-grid">
+        <div class="field wide">
+          <label>사업장명</label>
+          <input id="wkplNm" type="text" placeholder="예: 삼성전자, 카카오, 현대자동차" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>시도</label>
+          <select id="sido">
+            <option value="">전체</option>
+            <option>서울특별시</option><option>부산광역시</option>
+            <option>대구광역시</option><option>인천광역시</option>
+            <option>광주광역시</option><option>대전광역시</option>
+            <option>울산광역시</option><option>세종특별자치시</option>
+            <option>경기도</option><option>강원도</option>
+            <option>충청북도</option><option>충청남도</option>
+            <option>전라북도</option><option>전라남도</option>
+            <option>경상북도</option><option>경상남도</option>
+            <option>제주특별자치도</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>시군구</label>
+          <input id="sigungu" type="text" placeholder="예: 강남구, 해운대구" />
+        </div>
+        <div class="field">
+          <label>사업자유형</label>
+          <select id="bizType">
+            <option value="">전체</option>
+            <option value="법인">법인사업장</option>
+            <option value="개인">개인사업장</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>조회 건수</label>
+          <select id="numOfRows">
+            <option value="10">10건</option>
+            <option value="20" selected>20건</option>
+            <option value="50">50건</option>
+            <option value="100">100건</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail search fields -->
+    <div id="detailFields" style="display:none">
+      <div class="form-grid">
+        <div class="field wide">
+          <label>사업장 관리번호</label>
+          <input id="wkplMngtNo" type="text" placeholder="사업장 관리번호 14자리" autocomplete="off" />
+        </div>
+        <div class="field wide">
+          <label>사업자등록번호</label>
+          <input id="bizrNo" type="text" placeholder="예: 1234567890 (10자리)" maxlength="12" />
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="searchBtn" onclick="search()">조회하기</button>
+      <button class="btn-reset" onclick="resetForm()">초기화</button>
+    </div>
+  </div>
+
+  <div class="err" id="err"><span>⚠️</span><span id="errMsg"></span></div>
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <div style="font-size:13px;color:var(--muted)">데이터를 불러오는 중입니다...</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Results -->
+  <div id="resultArea"></div>
+</div>
+
+<script>
+const KEY = 'dc8294cd0177c5d51b45be29652fb691c4b18e055f22c87b0967ca1a78c7df0a';
+const EP_LIST   = 'https://apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2/getBassInfoSearch';
+const EP_DETAIL = 'https://apis.data.go.kr/B552015/NpsBplcInfoInqireServiceV2/getDetailInfoSearch';
+
+let activeTab = 'list';
+let currentPage = 1;
+let totalCount = 0;
+let tableList = [];
+
+function setTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('listFields').style.display   = tab === 'list'   ? '' : 'none';
+  document.getElementById('detailFields').style.display = tab === 'detail' ? '' : 'none';
+  hideAll();
+}
+
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+function resetForm() {
+  ['wkplNm','sigungu','wkplMngtNo','bizrNo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['sido','bizType','numOfRows'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = id === 'numOfRows' ? 1 : 0;
+  });
+  hideAll();
+}
+
+async function search(page = 1) {
+  hideAll();
+  currentPage = page;
+
+  const numOfRows = v('numOfRows') || '20';
+  const params = new URLSearchParams({ serviceKey: KEY, resultType: 'json', pageNo: page, numOfRows });
+
+  if (activeTab === 'list') {
+    const nm = v('wkplNm'), sido = v('sido'), sg = v('sigungu'), btype = v('bizType');
+    if (!nm && !sido && !sg) { showErr('사업장명 또는 지역(시도)을 하나 이상 입력하세요.'); return; }
+    if (nm)    params.append('wkplNm', nm);
+    if (sido)  params.append('sido', sido);
+    if (sg)    params.append('sigungu', sg);
+    if (btype) params.append('bizrKndNm', btype);
+  } else {
+    const mn = v('wkplMngtNo'), br = v('bizrNo').replace(/-/g,'');
+    if (!mn && !br) { showErr('사업장 관리번호 또는 사업자등록번호를 입력하세요.'); return; }
+    if (mn) params.append('wkplMngtNo', mn);
+    if (br) params.append('bizrNo', br);
+  }
+
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('searchBtn').disabled = true;
+
+  try {
+    const ep = activeTab === 'list' ? EP_LIST : EP_DETAIL;
+    const res = await fetch(`${ep}?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const body = data?.response?.body;
+    if (!body) throw new Error('응답 형식 오류');
+
+    totalCount = parseInt(body.totalCount || 0);
+    const raw = body.items?.item;
+
+    if (!raw || totalCount === 0) { showErr('검색 결과가 없습니다. 조건을 변경해보세요.'); return; }
+
+    const list = Array.isArray(raw) ? raw : [raw];
+    tableList = list;
+
+    renderStats(list, totalCount);
+
+    if (list.length === 1 || activeTab === 'detail') {
+      renderDetail(list[0]);
+    } else {
+      renderTable(list, parseInt(numOfRows), page);
+    }
+
+  } catch(e) {
+    showErr('API 호출 오류: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('searchBtn').disabled = false;
+  }
+}
+
+function fmtNum(v) {
+  if (!v || v === '-') return '-';
+  const n = Number(v);
+  return isNaN(n) ? v : n.toLocaleString('ko-KR');
+}
+
+function fmtMoney(v) {
+  if (!v || v === '-') return '-';
+  const n = Number(v);
+  if (isNaN(n)) return v;
+  if (n >= 100000000) return (n/100000000).toFixed(1) + '억원';
+  if (n >= 10000) return (n/10000).toFixed(0) + '만원';
+  return n.toLocaleString() + '원';
+}
+
+function fmtDate(d) {
+  if (!d || d.length < 8) return d || '-';
+  return `${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}`;
+}
+
+function bizPill(type) {
+  if (!type) return '';
+  if (type.includes('법인')) return `<span class="pill pill-corp">법인</span>`;
+  if (type.includes('개인')) return `<span class="pill pill-ind">개인</span>`;
+  return `<span class="pill pill-etc">${type}</span>`;
+}
+
+function renderStats(list, total) {
+  const totalJoin = list.reduce((s, i) => s + (Number(i.jnngPsnCnt) || 0), 0);
+  const totalNew  = list.reduce((s, i) => s + (Number(i.newAcqPsnCnt) || 0), 0);
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">총 조회 건수</div>
+      <div class="stat-value blue">${total.toLocaleString()}<span class="stat-unit">개소</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">현재 페이지 가입자 합계</div>
+      <div class="stat-value teal">${totalJoin.toLocaleString()}<span class="stat-unit">명</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">현재 페이지 신규취득 합계</div>
+      <div class="stat-value amber">${totalNew.toLocaleString()}<span class="stat-unit">명</span></div>
+    </div>
+  `;
+}
+
+function renderDetail(item) {
+  const html = `
+    <div class="result-card">
+      <div class="detail-header">
+        <div>
+          <div class="detail-name">${item.wkplNm || '-'}</div>
+          <div class="detail-num">${item.wkplMngtNo || ''}</div>
+        </div>
+        <div class="status-badges">
+          ${item.wkplStNm ? `<span class="badge badge-active">${item.wkplStNm}</span>` : ''}
+          ${item.bizrKndNm ? `<span class="badge badge-type">${item.bizrKndNm}</span>` : ''}
+          ${item.sido ? `<span class="badge badge-region">${item.sido}</span>` : ''}
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="info-section-label">기본 정보</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-lbl">사업장명</div><div class="info-val ko">${item.wkplNm || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">관리번호</div><div class="info-val">${item.wkplMngtNo || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">사업자번호</div><div class="info-val">${item.bizrNo || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">사업장 상태</div><div class="info-val hl">${item.wkplStNm || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">사업자 종류</div><div class="info-val ko">${item.bizrKndNm || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">자료생성년월</div><div class="info-val">${item.dataCrtYm ? item.dataCrtYm.slice(0,4)+'.'+item.dataCrtYm.slice(4) : '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">적용일자</div><div class="info-val">${fmtDate(item.aplDate)}</div></div>
+          <div class="info-item"><div class="info-lbl">탈퇴일자</div><div class="info-val">${fmtDate(item.dpDate)}</div></div>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="info-section-label">지역 정보</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-lbl">시도</div><div class="info-val ko">${item.sido || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">시군구</div><div class="info-val ko">${item.sigungu || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">읍면동</div><div class="info-val ko">${item.emdNm || '-'}</div></div>
+          <div class="info-item"><div class="info-lbl">주소</div><div class="info-val ko" style="font-size:12px">${item.addr || '-'}</div></div>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="info-section-label">가입 현황</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-lbl">가입자 수</div><div class="info-val hl">${fmtNum(item.jnngPsnCnt)}<span style="font-size:12px;color:var(--muted)"> 명</span></div></div>
+          <div class="info-item"><div class="info-lbl">신규취득자수</div><div class="info-val teal">${fmtNum(item.newAcqPsnCnt)}<span style="font-size:12px;color:var(--muted)"> 명</span></div></div>
+          <div class="info-item"><div class="info-lbl">상실가입자수</div><div class="info-val amber">${fmtNum(item.lostPsnCnt)}<span style="font-size:12px;color:var(--muted)"> 명</span></div></div>
+          <div class="info-item"><div class="info-lbl">당월고지금액</div><div class="info-val" style="color:var(--ink2)">${fmtMoney(item.mnAmt)}</div></div>
+        </div>
+      </div>
+    </div>
+    ${list_length > 1 ? `<button onclick="backToList()" style="background:transparent;border:1.5px solid var(--rule2);border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer;color:var(--muted);font-family:'Noto Sans KR',sans-serif;margin-bottom:16px;">← 목록으로</button>` : ''}
+  `;
+  let list_length = tableList.length;
+  document.getElementById('resultArea').innerHTML = html.replace('list_length', list_length);
+}
+
+function renderTable(list, numOfRows, page) {
+  const totalPages = Math.ceil(totalCount / numOfRows);
+  const start = (page-1)*numOfRows + 1;
+
+  const rows = list.map((item, i) => `
+    <tr onclick="clickRow(${i})">
+      <td class="td-mono" style="color:var(--muted);font-size:11px">${start+i}</td>
+      <td class="td-name">${item.wkplNm || '-'}</td>
+      <td class="td-mono" style="font-size:11px">${item.wkplMngtNo || '-'}</td>
+      <td>${bizPill(item.bizrKndNm)}</td>
+      <td style="font-size:12px;color:var(--muted)">${item.sido||''} ${item.sigungu||''}</td>
+      <td class="td-num td-hl">${fmtNum(item.jnngPsnCnt)}</td>
+      <td class="td-num td-teal">${fmtNum(item.newAcqPsnCnt)}</td>
+      <td class="td-num" style="color:var(--amber)">${fmtNum(item.lostPsnCnt)}</td>
+      <td class="td-mono" style="font-size:12px;color:var(--muted)">${item.dataCrtYm ? item.dataCrtYm.slice(0,4)+'.'+item.dataCrtYm.slice(4) : '-'}</td>
+    </tr>
+  `).join('');
+
+  let pgHtml = `<button class="pg-btn" onclick="search(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+  const sp = Math.max(1,page-2), ep = Math.min(totalPages, sp+4);
+  for(let i=sp;i<=ep;i++) pgHtml += `<button class="pg-btn ${i===page?'active':''}" onclick="search(${i})">${i}</button>`;
+  pgHtml += `<button class="pg-btn" onclick="search(${page+1})" ${page>=totalPages?'disabled':''}>›</button>`;
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-card">
+      <div class="card-toolbar">
+        <div class="card-title">사업장 목록</div>
+        <div class="card-meta">총 ${totalCount.toLocaleString()}건 · ${page}/${totalPages}페이지</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>사업장명</th><th>관리번호</th><th>유형</th>
+            <th>소재지</th><th>가입자수</th><th>신규취득</th><th>상실</th><th>자료년월</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="strip">
+        <span>총 <strong>${totalCount.toLocaleString()}</strong>건 · 행 클릭 시 상세보기</span>
+        <span>${page} / ${totalPages} 페이지</span>
+      </div>
+      <div class="pg">${pgHtml}</div>
+    </div>
+  `;
+}
+
+function clickRow(idx) {
+  renderDetail(tableList[idx]);
+  document.getElementById('resultArea').scrollIntoView({ behavior:'smooth' });
+}
+
+function backToList() {
+  renderTable(tableList, parseInt(v('numOfRows') || '20'), currentPage);
+}
+
+function showErr(msg) {
+  document.getElementById('errMsg').textContent = msg;
+  document.getElementById('err').classList.add('show');
+}
+
+function hideAll() {
+  document.getElementById('err').classList.remove('show');
+  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('statsRow').innerHTML = '';
+}
+
+['wkplNm','sigungu','wkplMngtNo','bizrNo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if(e.key==='Enter') search(); });
+});
+</script>
+</body>
+</html>
